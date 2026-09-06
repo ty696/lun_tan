@@ -148,33 +148,36 @@
       font-size: 12px;
       color: #555555;
     }
+    .error-msg {
+      background: #ffeeee;
+      border: 1px solid #ff9999;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 13px;
+      color: #cc0000;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 返回按钮（非首页时显示） -->
   <button class="back-btn hidden" id="backBtn" onclick="goHome()">&#10094;</button>
 
   <h1>论坛</h1>
 
-  <!-- 首页导航 -->
   <div class="nav" id="navBar">
     <a href="#" onclick="showNewPost()">发帖</a>
     <a href="#" onclick="showAllPosts()">浏览</a>
   </div>
 
-  <!-- 搜索框 -->
   <div class="search-row" id="searchRow">
     <input type="text" id="searchInput" placeholder="搜索...">
     <button onclick="searchPosts()">搜索</button>
   </div>
 
-  <!-- 帖子列表（浏览/搜索结果） -->
   <div id="resultPanel" class="hidden">
     <div id="resultContent"></div>
   </div>
 
-  <!-- 发帖表单 -->
   <div id="newPostPanel" class="hidden">
     <div class="form-label">标题：</div>
     <input type="text" id="postTitle" maxlength="100">
@@ -188,23 +191,27 @@
     </div>
   </div>
 
-  <!-- 帖子详情 -->
   <div id="detailPanel" class="hidden">
     <div id="detailContent"></div>
   </div>
 
   <script>
-    // ============ 配置：把你的 Pantry ID 填在这里 ============
-    const PANTRY_ID = 'CA8D8998-E4F8-40DF-A704-AD1A159647FC';
-    const BASKET_NAME = 'forum_data';
-    const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
-    // ==========================================================
+    // ============================================
+    // 把你的 Pantry ID 填在下面
+    // ============================================
+    var PANTRY_ID = 'CA8D8998-E4F8-40DF-A704-AD1A159647FC';
+    // ============================================
 
-    let currentPostId = null;
+    var BASKET = 'posts';
+    var API = 'https://getpantry.cloud/apiv1/pantry/' + PANTRY_ID + '/basket/' + BASKET;
+    var currentPostId = null;
 
-    // 显示/隐藏返回按钮
-    function updateBackButton(show) {
-      document.getElementById('backBtn').classList.toggle('hidden', !show);
+    // 简单的日志
+    console.log('Pantry API 地址：' + API);
+
+    function showError(msg) {
+      document.getElementById('resultContent').innerHTML = '<div class="error-msg">' + msg + '</div>';
+      document.getElementById('resultPanel').classList.remove('hidden');
     }
 
     function goHome() {
@@ -213,7 +220,7 @@
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
-      updateBackButton(false);
+      document.getElementById('backBtn').classList.add('hidden');
     }
 
     function showNewPost() {
@@ -222,7 +229,7 @@
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.remove('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
-      updateBackButton(true);
+      document.getElementById('backBtn').classList.remove('hidden');
     }
 
     function showAllPosts() {
@@ -231,7 +238,7 @@
       document.getElementById('resultPanel').classList.remove('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
-      updateBackButton(true);
+      document.getElementById('backBtn').classList.remove('hidden');
       loadAllPosts();
     }
 
@@ -242,90 +249,89 @@
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.remove('hidden');
-      updateBackButton(true);
+      document.getElementById('backBtn').classList.remove('hidden');
       loadDetail(id);
     }
 
     async function readData() {
-      const res = await fetch(API_URL);
+      var res = await fetch(API);
       if (res.status === 404) {
-        // 篮子不存在，创建初始数据
-        const initData = { posts: [] };
-        await fetch(API_URL, {
+        // 篮子不存在，创建
+        var init = { posts: [] };
+        await fetch(API, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(initData)
+          body: JSON.stringify(init)
         });
-        return initData;
+        return init;
       }
       if (!res.ok) {
-        throw new Error('Failed to fetch data');
+        throw new Error('HTTP ' + res.status);
       }
       return await res.json();
     }
 
     async function writeData(data) {
-      const res = await fetch(API_URL, {
+      var res = await fetch(API, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
       if (!res.ok) {
-        throw new Error('Failed to write data');
+        throw new Error('HTTP ' + res.status);
       }
       return true;
     }
 
     async function loadAllPosts() {
       try {
-        const data = await readData();
-        const posts = data.posts || [];
+        var data = await readData();
+        var posts = data.posts || [];
         renderPostTable(posts);
       } catch(e) {
-        document.getElementById('resultContent').innerHTML = '<p class="tip">加载失败，请检查 Pantry ID 是否正确</p>';
+        showError('加载失败。错误信息：' + e.message + '<br>请确认：<br>1. Pantry ID 填对了没有<br>2. 这个页面是用 http:// 或 https:// 打开的，不是直接双击文件');
       }
     }
 
     async function searchPosts() {
-      const keyword = document.getElementById('searchInput').value.trim();
+      var keyword = document.getElementById('searchInput').value.trim();
       if (!keyword) {
         alert('请输入关键词');
         return;
       }
       try {
-        const data = await readData();
-        const posts = (data.posts || []).filter(p => 
-          p.title.includes(keyword) || p.content.includes(keyword)
-        );
+        var data = await readData();
+        var posts = (data.posts || []).filter(function(p) {
+          return p.title.indexOf(keyword) !== -1 || p.content.indexOf(keyword) !== -1;
+        });
         document.getElementById('navBar').classList.add('hidden');
         document.getElementById('searchRow').classList.add('hidden');
         document.getElementById('resultPanel').classList.remove('hidden');
         document.getElementById('newPostPanel').classList.add('hidden');
         document.getElementById('detailPanel').classList.add('hidden');
-        updateBackButton(true);
+        document.getElementById('backBtn').classList.remove('hidden');
         renderPostTable(posts);
       } catch(e) {
-        alert('搜索失败');
+        showError('搜索失败：' + e.message);
       }
     }
 
     function renderPostTable(posts) {
-      const container = document.getElementById('resultContent');
+      var container = document.getElementById('resultContent');
       if (posts.length === 0) {
         container.innerHTML = '<p class="tip">暂无帖子</p>';
         return;
       }
-      let html = '<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
-      posts.forEach(p => {
-        const replyCount = p.replies ? p.replies.length : 0;
-        html += `
-          <tr>
-            <td><a href="#" class="link" onclick="showDetail(${p.id})">${esc(p.title)}</a></td>
-            <td>${esc(p.author)}</td>
-            <td>${replyCount}</td>
-            <td>${p.likes || 0}</td>
-            <td>${formatTime(p.created_at)}</td>
-          </tr>`;
+      var html = '<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
+      posts.forEach(function(p) {
+        var replyCount = p.replies ? p.replies.length : 0;
+        html += '<tr>' +
+          '<td><a href="#" class="link" onclick="showDetail(' + p.id + ')">' + esc(p.title) + '</a></td>' +
+          '<td>' + esc(p.author) + '</td>' +
+          '<td>' + replyCount + '</td>' +
+          '<td>' + (p.likes || 0) + '</td>' +
+          '<td>' + formatTime(p.created_at) + '</td>' +
+          '</tr>';
       });
       html += '</tbody></table>';
       container.innerHTML = html;
@@ -333,111 +339,109 @@
 
     async function loadDetail(id) {
       try {
-        const data = await readData();
-        const p = (data.posts || []).find(p => p.id === id);
+        var data = await readData();
+        var p = (data.posts || []).find(function(item) { return item.id === id; });
         if (!p) {
           document.getElementById('detailContent').innerHTML = '<p class="tip">帖子不存在</p>';
           return;
         }
-        let html = `
-          <h3>${esc(p.title)}</h3>
-          <p>作者：${esc(p.author)} | 时间：${formatTime(p.created_at)} | <a href="#" class="link" onclick="likePost(${p.id})">点赞（${p.likes || 0}）</a></p>
-          <hr>
-          <p>${esc(p.content)}</p>
-          <hr>
-          <h4>回复：</h4>`;
+        var html = '<h3>' + esc(p.title) + '</h3>' +
+          '<p>作者：' + esc(p.author) + ' | 时间：' + formatTime(p.created_at) +
+          ' | <a href="#" class="link" onclick="likePost(' + p.id + ')">点赞（' + (p.likes || 0) + '）</a></p>' +
+          '<hr>' +
+          '<p>' + esc(p.content) + '</p>' +
+          '<hr>' +
+          '<h4>回复：</h4>';
         if (p.replies && p.replies.length > 0) {
-          p.replies.forEach(r => {
-            html += `
-              <div class="reply-item">
-                <div class="reply-meta">${esc(r.author)} | ${formatTime(r.created_at)}</div>
-                <div>${esc(r.content)}</div>
-              </div>`;
+          p.replies.forEach(function(r) {
+            html += '<div class="reply-item">' +
+              '<div class="reply-meta">' + esc(r.author) + ' | ' + formatTime(r.created_at) + '</div>' +
+              '<div>' + esc(r.content) + '</div>' +
+              '</div>';
           });
         } else {
           html += '<p class="tip">暂无回复</p>';
         }
-        html += `
-          <div class="form-label">回复：</div>
-          <input type="text" id="replyContent" maxlength="1000">
-          <div class="form-label">昵称：</div>
-          <input type="text" id="replyAuthor" maxlength="20" value="游客">
-          <div><button onclick="submitReply(${p.id})">提交回复</button></div>`;
+        html += '<div class="form-label">回复：</div>' +
+          '<input type="text" id="replyContent" maxlength="1000">' +
+          '<div class="form-label">昵称：</div>' +
+          '<input type="text" id="replyAuthor" maxlength="20" value="游客">' +
+          '<div><button onclick="submitReply(' + p.id + ')">提交回复</button></div>';
         document.getElementById('detailContent').innerHTML = html;
       } catch(e) {
-        document.getElementById('detailContent').innerHTML = '<p class="tip">加载失败</p>';
+        document.getElementById('detailContent').innerHTML = '<p class="tip">加载失败：' + e.message + '</p>';
       }
     }
 
     async function submitPost() {
-      const title = document.getElementById('postTitle').value.trim();
-      const content = document.getElementById('postContent').value.trim();
-      const author = document.getElementById('postAuthor').value.trim() || '游客';
+      var title = document.getElementById('postTitle').value.trim();
+      var content = document.getElementById('postContent').value.trim();
+      var author = document.getElementById('postAuthor').value.trim() || '游客';
       if (!title || !content) {
         alert('标题和内容不能为空');
         return;
       }
       try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const newPost = {
+        var data = await readData();
+        var posts = data.posts || [];
+        var newPost = {
           id: Date.now(),
-          title,
-          content,
-          author,
+          title: title,
+          content: content,
+          author: author,
           likes: 0,
           replies: [],
           created_at: Date.now()
         };
         posts.unshift(newPost);
-        await writeData({ posts });
+        await writeData({ posts: posts });
         document.getElementById('postTitle').value = '';
         document.getElementById('postContent').value = '';
         goHome();
       } catch(e) {
-        alert('发布失败，请检查 Pantry 配置');
+        alert('发布失败：' + e.message);
       }
     }
 
     async function submitReply(postId) {
-      const content = document.getElementById('replyContent').value.trim();
-      const author = document.getElementById('replyAuthor').value.trim() || '游客';
+      var content = document.getElementById('replyContent').value.trim();
+      var author = document.getElementById('replyAuthor').value.trim() || '游客';
       if (!content) {
         alert('回复不能为空');
         return;
       }
       try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const post = posts.find(p => p.id === postId);
+        var data = await readData();
+        var posts = data.posts || [];
+        var post = posts.find(function(p) { return p.id === postId; });
         if (!post) {
           alert('帖子不存在');
           return;
         }
         if (!post.replies) post.replies = [];
         post.replies.push({
-          content,
-          author,
+          content: content,
+          author: author,
           created_at: Date.now()
         });
-        await writeData({ posts });
+        await writeData({ posts: posts });
         loadDetail(postId);
       } catch(e) {
-        alert('回复失败');
+        alert('回复失败：' + e.message);
       }
     }
 
     async function likePost(postId) {
       try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const post = posts.find(p => p.id === postId);
+        var data = await readData();
+        var posts = data.posts || [];
+        var post = posts.find(function(p) { return p.id === postId; });
         if (!post) return;
         post.likes = (post.likes || 0) + 1;
-        await writeData({ posts });
+        await writeData({ posts: posts });
         loadDetail(postId);
       } catch(e) {
-        alert('点赞失败');
+        alert('点赞失败：' + e.message);
       }
     }
 
@@ -448,15 +452,14 @@
 
     function formatTime(ts) {
       if (!ts) return '';
-      const d = new Date(ts);
-      const m = (d.getMonth()+1).toString().padStart(2,'0');
-      const day = d.getDate().toString().padStart(2,'0');
-      const h = d.getHours().toString().padStart(2,'0');
-      const min = d.getMinutes().toString().padStart(2,'0');
+      var d = new Date(ts);
+      var m = (d.getMonth()+1).toString().padStart(2,'0');
+      var day = d.getDate().toString().padStart(2,'0');
+      var h = d.getHours().toString().padStart(2,'0');
+      var min = d.getMinutes().toString().padStart(2,'0');
       return m + '-' + day + ' ' + h + ':' + min;
     }
 
-    // 初始化显示首页
     goHome();
   </script>
 </body>
