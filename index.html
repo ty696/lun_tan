@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>论坛</title>
+  <style>
+    body {
+      background: #ffffff;
+      font-family: SimSun, "宋体", serif;
+      font-size: 14px;
+      color: #000000;
+      margin: 0;
+      padding: 30px 20px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 {
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .nav {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .nav a {
+      color: #0000cc;
+      margin: 0 8px;
+      font-size: 14px;
+    }
+    .nav a:hover {
+      color: #ff0000;
+    }
+    .search-row {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .search-row input {
+      width: 200px;
+      border: 1px solid #999999;
+      padding: 3px 5px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #ffffff;
+    }
+    .search-row button {
+      border: 1px solid #999999;
+      background: #eeeeee;
+      padding: 3px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .search-row button:hover {
+      background: #dddddd;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #999999;
+      background: #ffffff;
+      margin-top: 10px;
+    }
+    th {
+      background: #eeeeee;
+      border: 1px solid #999999;
+      padding: 4px 6px;
+      text-align: left;
+      font-weight: bold;
+    }
+    td {
+      border: 1px solid #999999;
+      padding: 4px 6px;
+    }
+    .link {
+      color: #0000cc;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .link:hover {
+      color: #ff0000;
+    }
+    .form-label {
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 1px solid #999999;
+      padding: 3px 5px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #ffffff;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      border: 1px solid #999999;
+      background: #eeeeee;
+      padding: 3px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:hover {
+      background: #dddddd;
+    }
+    .hidden {
+      display: none;
+    }
+    .tip {
+      text-align: center;
+      color: #555555;
+      padding: 15px;
+    }
+    .reply-item {
+      border-bottom: 1px dashed #999999;
+      padding: 6px 0;
+    }
+    .reply-meta {
+      font-size: 12px;
+      color: #555555;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>论坛</h1>
+
+  <div class="nav" id="navBar">
+    <a href="#" onclick="showNewPost()">发帖</a>
+    <a href="#" onclick="showAllPosts()">浏览</a>
+  </div>
+
+  <div class="search-row" id="searchRow">
+    <input type="text" id="searchInput" placeholder="搜索...">
+    <button onclick="searchPosts()">搜索</button>
+  </div>
+
+  <!-- 帖子列表 / 搜索结果 -->
+  <div id="resultPanel" class="hidden">
+    <div id="resultContent"></div>
+  </div>
+
+  <!-- 发帖 -->
+  <div id="newPostPanel" class="hidden">
+    <div class="form-label">标题：</div>
+    <input type="text" id="postTitle" maxlength="100">
+    <div class="form-label">内容：</div>
+    <textarea id="postContent" maxlength="5000"></textarea>
+    <div class="form-label">昵称：</div>
+    <input type="text" id="postAuthor" maxlength="20" value="游客">
+    <div>
+      <button onclick="submitPost()">发布</button>
+      <button onclick="goHome()">返回</button>
+    </div>
+  </div>
+
+  <!-- 帖子详情 -->
+  <div id="detailPanel" class="hidden">
+    <p><a href="#" class="link" onclick="showAllPosts()">返回列表</a></p>
+    <div id="detailContent"></div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    let currentPostId = null;
+
+    function goHome() {
+      document.getElementById('navBar').classList.remove('hidden');
+      document.getElementById('searchRow').classList.remove('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+    }
+
+    function showNewPost() {
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
+      document.getElementById('newPostPanel').classList.remove('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+    }
+
+    function showAllPosts() {
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('resultPanel').classList.remove('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+      loadAllPosts();
+    }
+
+    function showDetail(id) {
+      currentPostId = id;
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.remove('hidden');
+      loadDetail(id);
+    }
+
+    async function loadAllPosts() {
+      try {
+        const res = await fetch(API_BASE + '/posts');
+        const posts = await res.json();
+        renderPostTable(posts);
+      } catch(e) {
+        document.getElementById('resultContent').innerHTML = '<p class="tip">加载失败，请检查服务器</p>';
+      }
+    }
+
+    async function searchPosts() {
+      const keyword = document.getElementById('searchInput').value.trim();
+      if (!keyword) {
+        alert('请输入关键词');
+        return;
+      }
+      try {
+        const res = await fetch(API_BASE + '/posts');
+        const posts = await res.json();
+        const filtered = posts.filter(p => p.title.includes(keyword) || p.content.includes(keyword));
+        document.getElementById('navBar').classList.add('hidden');
+        document.getElementById('searchRow').classList.add('hidden');
+        document.getElementById('resultPanel').classList.remove('hidden');
+        renderPostTable(filtered);
+      } catch(e) {
+        alert('搜索失败');
+      }
+    }
+
+    function renderPostTable(posts) {
+      const container = document.getElementById('resultContent');
+      if (posts.length === 0) {
+        container.innerHTML = '<p class="tip">暂无帖子</p>';
+        return;
+      }
+      let html = '<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
+      posts.forEach(p => {
+        html += `
+          <tr>
+            <td><a href="#" class="link" onclick="showDetail(${p.id})">${esc(p.title)}</a></td>
+            <td>${esc(p.author)}</td>
+            <td>${p.reply_count}</td>
+            <td>${p.likes}</td>
+            <td>${formatTime(p.created_at)}</td>
+          </tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    async function loadDetail(id) {
+      try {
+        const res = await fetch(API_BASE + '/posts/' + id);
+        const p = await res.json();
+        let html = `
+          <h3>${esc(p.title)}</h3>
+          <p>作者：${esc(p.author)} | 时间：${formatTime(p.created_at)} | <a href="#" class="link" onclick="likePost(${p.id})">点赞（${p.likes}）</a></p>
+          <hr>
+          <p>${esc(p.content)}</p>
+          <hr>
+          <h4>回复：</h4>`;
+        if (p.replies && p.replies.length > 0) {
+          p.replies.forEach(r => {
+            html += `
+              <div class="reply-item">
+                <div class="reply-meta">${esc(r.author)} | ${formatTime(r.created_at)}</div>
+                <div>${esc(r.content)}</div>
+              </div>`;
+          });
+        } else {
+          html += '<p class="tip">暂无回复</p>';
+        }
+        html += `
+          <div class="form-label">回复：</div>
+          <input type="text" id="replyContent" maxlength="1000">
+          <div class="form-label">昵称：</div>
+          <input type="text" id="replyAuthor" maxlength="20" value="游客">
+          <div><button onclick="submitReply(${p.id})">提交回复</button></div>`;
+        document.getElementById('detailContent').innerHTML = html;
+      } catch(e) {
+        document.getElementById('detailContent').innerHTML = '<p class="tip">加载失败</p>';
+      }
+    }
+
+    async function submitPost() {
+      const title = document.getElementById('postTitle').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+      const author = document.getElementById('postAuthor').value.trim() || '游客';
+      if (!title || !content) {
+        alert('标题和内容不能为空');
+        return;
+      }
+      try {
+        const res = await fetch(API_BASE + '/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content, author })
+        });
+        if (res.ok) {
+          document.getElementById('postTitle').value = '';
+          document.getElementById('postContent').value = '';
+          goHome();
+        } else {
+          alert('发布失败');
+        }
+      } catch(e) {
+        alert('发布失败，无法连接服务器');
+      }
+    }
+
+    async function submitReply(postId) {
+      const content = document.getElementById('replyContent').value.trim();
+      const author = document.getElementById('replyAuthor').value.trim() || '游客';
+      if (!content) {
+        alert('回复不能为空');
+        return;
+      }
+      try {
+        const res = await fetch(API_BASE + '/posts/' + postId + '/replies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, author })
+        });
+        if (res.ok) {
+          loadDetail(postId);
+        } else {
+          alert('回复失败');
+        }
+      } catch(e) {
+        alert('回复失败，无法连接服务器');
+      }
+    }
+
+    async function likePost(postId) {
+      try {
+        const res = await fetch(API_BASE + '/posts/' + postId + '/like', {
+          method: 'POST'
+        });
+        if (res.ok) {
+          loadDetail(postId);
+        }
+      } catch(e) {
+        alert('点赞失败');
+      }
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function formatTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts);
+      const m = (d.getMonth()+1).toString().padStart(2,'0');
+      const day = d.getDate().toString().padStart(2,'0');
+      const h = d.getHours().toString().padStart(2,'0');
+      const min = d.getMinutes().toString().padStart(2,'0');
+      return m + '-' + day + ' ' + h + ':' + min;
+    }
+
+    goHome();
+  </script>
+</body>
+</html>
