@@ -22,6 +22,23 @@
       margin-bottom: 10px;
       font-weight: bold;
     }
+    .back-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #0000cc;
+      text-decoration: none;
+      cursor: pointer;
+      line-height: 1;
+      padding: 5px 10px;
+      border: none;
+      background: none;
+    }
+    .back-btn:hover {
+      color: #ff0000;
+    }
     .nav {
       text-align: center;
       margin-bottom: 15px;
@@ -30,6 +47,8 @@
       color: #0000cc;
       margin: 0 8px;
       font-size: 14px;
+      text-decoration: underline;
+      cursor: pointer;
     }
     .nav a:hover {
       color: #ff0000;
@@ -95,6 +114,7 @@
       font-size: 14px;
       font-family: inherit;
       background: #ffffff;
+      box-sizing: border-box;
     }
     textarea {
       min-height: 100px;
@@ -132,24 +152,29 @@
 </head>
 <body>
 
+  <!-- 返回按钮（非首页时显示） -->
+  <button class="back-btn hidden" id="backBtn" onclick="goHome()">&#10094;</button>
+
   <h1>论坛</h1>
 
+  <!-- 首页导航 -->
   <div class="nav" id="navBar">
     <a href="#" onclick="showNewPost()">发帖</a>
     <a href="#" onclick="showAllPosts()">浏览</a>
   </div>
 
+  <!-- 搜索框 -->
   <div class="search-row" id="searchRow">
     <input type="text" id="searchInput" placeholder="搜索...">
     <button onclick="searchPosts()">搜索</button>
   </div>
 
-  <!-- 帖子列表 / 搜索结果 -->
+  <!-- 帖子列表（浏览/搜索结果） -->
   <div id="resultPanel" class="hidden">
     <div id="resultContent"></div>
   </div>
 
-  <!-- 发帖 -->
+  <!-- 发帖表单 -->
   <div id="newPostPanel" class="hidden">
     <div class="form-label">标题：</div>
     <input type="text" id="postTitle" maxlength="100">
@@ -165,13 +190,22 @@
 
   <!-- 帖子详情 -->
   <div id="detailPanel" class="hidden">
-    <p><a href="#" class="link" onclick="showAllPosts()">返回列表</a></p>
     <div id="detailContent"></div>
   </div>
 
   <script>
-    const API_BASE = '/api';
+    // ============ 配置：把你的 Pantry ID 填在这里 ============
+    const PANTRY_ID = '你的pantry_id';
+    const BASKET_NAME = 'forum_data';
+    const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
+    // ==========================================================
+
     let currentPostId = null;
+
+    // 显示/隐藏返回按钮
+    function updateBackButton(show) {
+      document.getElementById('backBtn').classList.toggle('hidden', !show);
+    }
 
     function goHome() {
       document.getElementById('navBar').classList.remove('hidden');
@@ -179,6 +213,7 @@
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
+      updateBackButton(false);
     }
 
     function showNewPost() {
@@ -187,6 +222,7 @@
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.remove('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
+      updateBackButton(true);
     }
 
     function showAllPosts() {
@@ -195,6 +231,7 @@
       document.getElementById('resultPanel').classList.remove('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
+      updateBackButton(true);
       loadAllPosts();
     }
 
@@ -205,16 +242,47 @@
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.remove('hidden');
+      updateBackButton(true);
       loadDetail(id);
+    }
+
+    async function readData() {
+      const res = await fetch(API_URL);
+      if (res.status === 404) {
+        // 篮子不存在，创建初始数据
+        const initData = { posts: [] };
+        await fetch(API_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(initData)
+        });
+        return initData;
+      }
+      if (!res.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      return await res.json();
+    }
+
+    async function writeData(data) {
+      const res = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw new Error('Failed to write data');
+      }
+      return true;
     }
 
     async function loadAllPosts() {
       try {
-        const res = await fetch(API_BASE + '/posts');
-        const posts = await res.json();
+        const data = await readData();
+        const posts = data.posts || [];
         renderPostTable(posts);
       } catch(e) {
-        document.getElementById('resultContent').innerHTML = '<p class="tip">加载失败，请检查服务器</p>';
+        document.getElementById('resultContent').innerHTML = '<p class="tip">加载失败，请检查 Pantry ID 是否正确</p>';
       }
     }
 
@@ -225,13 +293,17 @@
         return;
       }
       try {
-        const res = await fetch(API_BASE + '/posts');
-        const posts = await res.json();
-        const filtered = posts.filter(p => p.title.includes(keyword) || p.content.includes(keyword));
+        const data = await readData();
+        const posts = (data.posts || []).filter(p => 
+          p.title.includes(keyword) || p.content.includes(keyword)
+        );
         document.getElementById('navBar').classList.add('hidden');
         document.getElementById('searchRow').classList.add('hidden');
         document.getElementById('resultPanel').classList.remove('hidden');
-        renderPostTable(filtered);
+        document.getElementById('newPostPanel').classList.add('hidden');
+        document.getElementById('detailPanel').classList.add('hidden');
+        updateBackButton(true);
+        renderPostTable(posts);
       } catch(e) {
         alert('搜索失败');
       }
@@ -245,12 +317,13 @@
       }
       let html = '<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
       posts.forEach(p => {
+        const replyCount = p.replies ? p.replies.length : 0;
         html += `
           <tr>
             <td><a href="#" class="link" onclick="showDetail(${p.id})">${esc(p.title)}</a></td>
             <td>${esc(p.author)}</td>
-            <td>${p.reply_count}</td>
-            <td>${p.likes}</td>
+            <td>${replyCount}</td>
+            <td>${p.likes || 0}</td>
             <td>${formatTime(p.created_at)}</td>
           </tr>`;
       });
@@ -260,11 +333,15 @@
 
     async function loadDetail(id) {
       try {
-        const res = await fetch(API_BASE + '/posts/' + id);
-        const p = await res.json();
+        const data = await readData();
+        const p = (data.posts || []).find(p => p.id === id);
+        if (!p) {
+          document.getElementById('detailContent').innerHTML = '<p class="tip">帖子不存在</p>';
+          return;
+        }
         let html = `
           <h3>${esc(p.title)}</h3>
-          <p>作者：${esc(p.author)} | 时间：${formatTime(p.created_at)} | <a href="#" class="link" onclick="likePost(${p.id})">点赞（${p.likes}）</a></p>
+          <p>作者：${esc(p.author)} | 时间：${formatTime(p.created_at)} | <a href="#" class="link" onclick="likePost(${p.id})">点赞（${p.likes || 0}）</a></p>
           <hr>
           <p>${esc(p.content)}</p>
           <hr>
@@ -301,20 +378,24 @@
         return;
       }
       try {
-        const res = await fetch(API_BASE + '/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, content, author })
-        });
-        if (res.ok) {
-          document.getElementById('postTitle').value = '';
-          document.getElementById('postContent').value = '';
-          goHome();
-        } else {
-          alert('发布失败');
-        }
+        const data = await readData();
+        const posts = data.posts || [];
+        const newPost = {
+          id: Date.now(),
+          title,
+          content,
+          author,
+          likes: 0,
+          replies: [],
+          created_at: Date.now()
+        };
+        posts.unshift(newPost);
+        await writeData({ posts });
+        document.getElementById('postTitle').value = '';
+        document.getElementById('postContent').value = '';
+        goHome();
       } catch(e) {
-        alert('发布失败，无法连接服务器');
+        alert('发布失败，请检查 Pantry 配置');
       }
     }
 
@@ -326,29 +407,35 @@
         return;
       }
       try {
-        const res = await fetch(API_BASE + '/posts/' + postId + '/replies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, author })
-        });
-        if (res.ok) {
-          loadDetail(postId);
-        } else {
-          alert('回复失败');
+        const data = await readData();
+        const posts = data.posts || [];
+        const post = posts.find(p => p.id === postId);
+        if (!post) {
+          alert('帖子不存在');
+          return;
         }
+        if (!post.replies) post.replies = [];
+        post.replies.push({
+          content,
+          author,
+          created_at: Date.now()
+        });
+        await writeData({ posts });
+        loadDetail(postId);
       } catch(e) {
-        alert('回复失败，无法连接服务器');
+        alert('回复失败');
       }
     }
 
     async function likePost(postId) {
       try {
-        const res = await fetch(API_BASE + '/posts/' + postId + '/like', {
-          method: 'POST'
-        });
-        if (res.ok) {
-          loadDetail(postId);
-        }
+        const data = await readData();
+        const posts = data.posts || [];
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+        post.likes = (post.likes || 0) + 1;
+        await writeData({ posts });
+        loadDetail(postId);
       } catch(e) {
         alert('点赞失败');
       }
@@ -369,6 +456,7 @@
       return m + '-' + day + ' ' + h + ':' + min;
     }
 
+    // 初始化显示首页
     goHome();
   </script>
 </body>
