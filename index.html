@@ -30,8 +30,6 @@
       color: #0000cc;
       margin: 0 8px;
       font-size: 14px;
-      text-decoration: underline;
-      cursor: pointer;
     }
     .nav a:hover {
       color: #ff0000;
@@ -97,7 +95,6 @@
       font-size: 14px;
       font-family: inherit;
       background: #ffffff;
-      box-sizing: border-box;
     }
     textarea {
       min-height: 100px;
@@ -147,10 +144,12 @@
     <button onclick="searchPosts()">搜索</button>
   </div>
 
+  <!-- 帖子列表 / 搜索结果 -->
   <div id="resultPanel" class="hidden">
     <div id="resultContent"></div>
   </div>
 
+  <!-- 发帖 -->
   <div id="newPostPanel" class="hidden">
     <div class="form-label">标题：</div>
     <input type="text" id="postTitle" maxlength="100">
@@ -164,43 +163,15 @@
     </div>
   </div>
 
+  <!-- 帖子详情 -->
   <div id="detailPanel" class="hidden">
     <p><a href="#" class="link" onclick="showAllPosts()">返回列表</a></p>
     <div id="detailContent"></div>
   </div>
 
   <script>
-    // ============ 配置：把你的 Pantry ID 填在这里 ============
-    const PANTRY_ID = 'CA8D8998-E4F8-40DF-A704-AD1A159647FC';
-    const BASKET_NAME = 'forum_data';
-    const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
-    // ==========================================================
-
+    const API_BASE = '/api';
     let currentPostId = null;
-
-    async function readData() {
-      const res = await fetch(API_URL);
-      if (res.status === 404) {
-        // 篮子不存在，创建初始数据
-        const initData = { posts: [] };
-        await fetch(API_URL, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(initData)
-        });
-        return initData;
-      }
-      return await res.json();
-    }
-
-    async function writeData(data) {
-      const res = await fetch(API_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return res.ok;
-    }
 
     function goHome() {
       document.getElementById('navBar').classList.remove('hidden');
@@ -239,11 +210,11 @@
 
     async function loadAllPosts() {
       try {
-        const data = await readData();
-        const posts = data.posts || [];
+        const res = await fetch(API_BASE + '/posts');
+        const posts = await res.json();
         renderPostTable(posts);
       } catch(e) {
-        document.getElementById('resultContent').innerHTML = '<p class="tip">加载失败，请检查配置</p>';
+        document.getElementById('resultContent').innerHTML = '<p class="tip">加载失败，请检查服务器</p>';
       }
     }
 
@@ -254,14 +225,13 @@
         return;
       }
       try {
-        const data = await readData();
-        const posts = (data.posts || []).filter(p => 
-          p.title.includes(keyword) || p.content.includes(keyword)
-        );
+        const res = await fetch(API_BASE + '/posts');
+        const posts = await res.json();
+        const filtered = posts.filter(p => p.title.includes(keyword) || p.content.includes(keyword));
         document.getElementById('navBar').classList.add('hidden');
         document.getElementById('searchRow').classList.add('hidden');
         document.getElementById('resultPanel').classList.remove('hidden');
-        renderPostTable(posts);
+        renderPostTable(filtered);
       } catch(e) {
         alert('搜索失败');
       }
@@ -275,13 +245,12 @@
       }
       let html = '<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
       posts.forEach(p => {
-        const replyCount = p.replies ? p.replies.length : 0;
         html += `
           <tr>
             <td><a href="#" class="link" onclick="showDetail(${p.id})">${esc(p.title)}</a></td>
             <td>${esc(p.author)}</td>
-            <td>${replyCount}</td>
-            <td>${p.likes || 0}</td>
+            <td>${p.reply_count}</td>
+            <td>${p.likes}</td>
             <td>${formatTime(p.created_at)}</td>
           </tr>`;
       });
@@ -291,15 +260,11 @@
 
     async function loadDetail(id) {
       try {
-        const data = await readData();
-        const p = (data.posts || []).find(p => p.id === id);
-        if (!p) {
-          document.getElementById('detailContent').innerHTML = '<p class="tip">帖子不存在</p>';
-          return;
-        }
+        const res = await fetch(API_BASE + '/posts/' + id);
+        const p = await res.json();
         let html = `
           <h3>${esc(p.title)}</h3>
-          <p>作者：${esc(p.author)} | 时间：${formatTime(p.created_at)} | <a href="#" class="link" onclick="likePost(${p.id})">点赞（${p.likes || 0}）</a></p>
+          <p>作者：${esc(p.author)} | 时间：${formatTime(p.created_at)} | <a href="#" class="link" onclick="likePost(${p.id})">点赞（${p.likes}）</a></p>
           <hr>
           <p>${esc(p.content)}</p>
           <hr>
@@ -336,20 +301,12 @@
         return;
       }
       try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const newPost = {
-          id: Date.now(),
-          title,
-          content,
-          author,
-          likes: 0,
-          replies: [],
-          created_at: Date.now()
-        };
-        posts.unshift(newPost);
-        const ok = await writeData({ posts });
-        if (ok) {
+        const res = await fetch(API_BASE + '/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content, author })
+        });
+        if (res.ok) {
           document.getElementById('postTitle').value = '';
           document.getElementById('postContent').value = '';
           goHome();
@@ -357,7 +314,7 @@
           alert('发布失败');
         }
       } catch(e) {
-        alert('发布失败，请检查配置');
+        alert('发布失败，无法连接服务器');
       }
     }
 
@@ -369,39 +326,27 @@
         return;
       }
       try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const post = posts.find(p => p.id === postId);
-        if (!post) {
-          alert('帖子不存在');
-          return;
-        }
-        if (!post.replies) post.replies = [];
-        post.replies.push({
-          content,
-          author,
-          created_at: Date.now()
+        const res = await fetch(API_BASE + '/posts/' + postId + '/replies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, author })
         });
-        const ok = await writeData({ posts });
-        if (ok) {
+        if (res.ok) {
           loadDetail(postId);
         } else {
           alert('回复失败');
         }
       } catch(e) {
-        alert('回复失败，请检查配置');
+        alert('回复失败，无法连接服务器');
       }
     }
 
     async function likePost(postId) {
       try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const post = posts.find(p => p.id === postId);
-        if (!post) return;
-        post.likes = (post.likes || 0) + 1;
-        const ok = await writeData({ posts });
-        if (ok) {
+        const res = await fetch(API_BASE + '/posts/' + postId + '/like', {
+          method: 'POST'
+        });
+        if (res.ok) {
           loadDetail(postId);
         }
       } catch(e) {
