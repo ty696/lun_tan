@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>论坛</title>
   <style>
-    body { background:#fff; font-family:SimSun; font-size:14px; margin:0; padding:30px 20px; max-width:700px; margin:auto; }
-    h1 { text-align:center; margin-bottom:10px; }
+    body { background:#fff; font-family:SimSun; font-size:14px; margin:0; padding:20px; max-width:700px; margin:auto; }
+    h1 { text-align:center; }
     .nav { text-align:center; margin-bottom:15px; }
     .nav a { color:#00c; margin:0 8px; cursor:pointer; text-decoration:underline; }
     .search-row { text-align:center; margin-bottom:15px; }
-    .search-row input { width:320px; border:1px solid #999; padding:4px 8px; font-size:14px; display:block; margin:0 auto 6px auto; }
+    .search-row input { width:300px; border:1px solid #999; padding:4px 8px; font-size:14px; display:block; margin:0 auto 6px auto; }
     .search-row button { border:1px solid #999; background:#eee; padding:4px 16px; cursor:pointer; font-size:14px; display:block; margin:0 auto; }
     table { width:100%; border-collapse:collapse; border:1px solid #999; margin-top:10px; }
     th,td { border:1px solid #999; padding:4px 6px; text-align:left; }
@@ -24,9 +24,7 @@
   </style>
 </head>
 <body>
-
   <button class="back-btn hidden" id="backBtn" onclick="goHome()">&#10094;</button>
-
   <h1>论坛</h1>
 
   <div class="nav" id="navBar">
@@ -62,7 +60,7 @@
 
   <script>
     // 本地存储版本：数据保存在浏览器 localStorage 中
-    var STORAGE_KEY = 'forum_posts';
+    var STORAGE_KEY = 'my_forum_posts';
     var currentIndex = null;
 
     function getPosts() {
