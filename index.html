@@ -196,9 +196,6 @@
   </div>
 
   <script>
-    // ============================================
-    // Pantry ID（已经填好）
-    // ============================================
     var PANTRY_ID = 'ebd77404-1677-4b4c-bc2b-2f4d76a89696';
     var BASKET = 'posts';
     var API = 'https://getpantry.cloud/apiv1/pantry/' + PANTRY_ID + '/basket/' + BASKET;
@@ -243,12 +240,10 @@
       loadDetail(id);
     }
 
-    // 读取数据（如果篮子不存在，使用 POST 创建篮子）
     async function readData() {
       let res = await fetch(API);
       if (res.status === 404) {
-        // 篮子不存在，使用 POST 创建篮子
-        console.log('篮子不存在，使用 POST 创建...');
+        // 篮子不存在，用 POST 创建
         const initData = { posts: [] };
         const createRes = await fetch(API, {
           method: 'POST',
@@ -256,13 +251,12 @@
           body: JSON.stringify(initData)
         });
         if (!createRes.ok) {
-          throw new Error('创建篮子失败，HTTP ' + createRes.status);
+          throw new Error('创建篮子失败 HTTP ' + createRes.status);
         }
-        console.log('篮子创建成功');
         return initData;
       }
       if (!res.ok) {
-        throw new Error('读取失败，HTTP ' + res.status);
+        throw new Error('读取失败 HTTP ' + res.status);
       }
       return await res.json();
     }
@@ -274,7 +268,7 @@
         body: JSON.stringify(data)
       });
       if (!res.ok) {
-        throw new Error('写入失败，HTTP ' + res.status);
+        throw new Error('写入失败 HTTP ' + res.status);
       }
       return true;
     }
@@ -285,7 +279,7 @@
         const posts = data.posts || [];
         renderPostTable(posts);
       } catch(e) {
-        document.getElementById('resultContent').innerHTML = '<div class="error-msg">加载失败：' + e.message + '<br>请确认：<br>1. 页面是通过 https:// 访问的（不是 file://）<br>2. Pantry ID 正确无误</div>';
+        document.getElementById('resultContent').innerHTML = '<div class="error-msg">加载失败：' + e.message + '</div>';
       }
     }
 
