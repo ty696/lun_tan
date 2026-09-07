@@ -10,8 +10,8 @@
     .nav { text-align:center; margin-bottom:15px; }
     .nav a { color:#00c; margin:0 8px; cursor:pointer; text-decoration:underline; }
     .search-row { text-align:center; margin-bottom:15px; }
-    .search-row input { width:320px; border:1px solid #999; padding:4px 8px; font-size:14px; }
-    .search-row button { border:1px solid #999; background:#eee; padding:4px 16px; cursor:pointer; font-size:14px; }
+    .search-row input { width:320px; border:1px solid #999; padding:4px 8px; font-size:14px; display:block; margin:0 auto 6px auto; }
+    .search-row button { border:1px solid #999; background:#eee; padding:4px 16px; cursor:pointer; font-size:14px; display:block; margin:0 auto; }
     table { width:100%; border-collapse:collapse; border:1px solid #999; margin-top:10px; }
     th,td { border:1px solid #999; padding:4px 6px; text-align:left; }
     .link { color:#00c; text-decoration:underline; cursor:pointer; }
@@ -61,12 +61,18 @@
   </div>
 
   <script>
-    // ========== 改成你的 KVdb Bucket ID ==========
-    var BUCKET_ID = 'kvdb-你的ID';
-    var API = 'https://kvdb.io/' + BUCKET_ID + '/posts';
-    // =============================================
+    // 本地存储版本：数据保存在浏览器 localStorage 中
+    var STORAGE_KEY = 'forum_posts';
+    var currentIndex = null;
 
-    var currentPostId = null;
+    function getPosts() {
+      var data = localStorage.getItem(STORAGE_KEY);
+      if (!data) return [];
+      try { return JSON.parse(data); } catch(e) { return []; }
+    }
+    function savePosts(posts) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+    }
 
     function goHome() {
       document.getElementById('navBar').classList.remove('hidden');
@@ -93,48 +99,33 @@
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
       document.getElementById('backBtn').classList.remove('hidden');
-      loadPosts();
+      renderList(getPosts());
     }
 
-    function showDetail(id) {
-      currentPostId = id;
+    function showDetail(index) {
+      currentIndex = index;
       document.getElementById('navBar').classList.add('hidden');
       document.getElementById('searchRow').classList.add('hidden');
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.remove('hidden');
       document.getElementById('backBtn').classList.remove('hidden');
-      loadDetail(id);
+      renderDetail(index);
     }
 
     function searchPosts() {
       var keyword = document.getElementById('searchInput').value.trim();
       if (!keyword) { alert('请输入关键词'); return; }
+      var posts = getPosts().filter(function(p) {
+        return (p.title && p.title.indexOf(keyword) !== -1) || (p.content && p.content.indexOf(keyword) !== -1);
+      });
       document.getElementById('navBar').classList.add('hidden');
       document.getElementById('searchRow').classList.add('hidden');
       document.getElementById('resultPanel').classList.remove('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
       document.getElementById('backBtn').classList.remove('hidden');
-      loadPosts(keyword);
-    }
-
-    async function loadPosts(keyword) {
-      try {
-        var res = await fetch(API);
-        if (!res.ok) throw new Error();
-        var posts = await res.json();
-        posts = posts || [];
-        posts.sort(function(a,b){ return (b.createdOn||0) - (a.createdOn||0); });
-        if (keyword) {
-          posts = posts.filter(function(p) {
-            return (p.title && p.title.indexOf(keyword) !== -1) || (p.content && p.content.indexOf(keyword) !== -1);
-          });
-        }
-        renderList(posts);
-      } catch(e) {
-        document.getElementById('resultContent').innerHTML = '<p class="tip">加载失败，请检查 Bucket ID 是否正确</p>';
-      }
+      renderList(posts);
     }
 
     function renderList(posts) {
@@ -144,93 +135,68 @@
         return;
       }
       var html = '<table><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr>';
-      posts.forEach(function(p) {
-        html += '<tr><td><a class="link" onclick="showDetail(\'' + p._id + '\')">' + esc(p.title) + '</a></td><td>' + esc(p.author) + '</td><td>' + (p.replies ? p.replies.length : 0) + '</td><td>' + (p.likes || 0) + '</td><td>' + formatTime(p.createdOn) + '</td></tr>';
+      posts.forEach(function(p, i) {
+        html += '<tr><td><a class="link" onclick="showDetail(' + i + ')">' + esc(p.title) + '</a></td><td>' + esc(p.author) + '</td><td>' + (p.replies ? p.replies.length : 0) + '</td><td>' + (p.likes || 0) + '</td><td>' + formatTime(p.created_at) + '</td></tr>';
       });
       html += '</table>';
       container.innerHTML = html;
     }
 
-    async function loadDetail(id) {
-      try {
-        var res = await fetch(API + '/' + id);
-        var p = await res.json();
-        var html = '<h3>' + esc(p.title) + '</h3><p>作者：' + esc(p.author) + ' | 时间：' + formatTime(p.createdOn) + ' | <a class="link" onclick="likePost(\'' + id + '\')">点赞（' + (p.likes||0) + '）</a></p><hr><p>' + esc(p.content) + '</p><hr><h4>回复：</h4>';
-        if (p.replies && p.replies.length) {
-          p.replies.forEach(function(r) {
-            html += '<div><b>' + esc(r.author) + ':</b> ' + esc(r.content) + '</div>';
-          });
-        } else {
-          html += '<p class="tip">暂无回复</p>';
-        }
-        html += '<div class="form-label">回复：</div><input type="text" id="replyContent"><div class="form-label">昵称：</div><input type="text" id="replyAuthor" value="游客"><div style="margin-top:8px;"><button onclick="addReply(\'' + id + '\')">提交回复</button></div>';
-        document.getElementById('detailContent').innerHTML = html;
-      } catch(e) {
-        document.getElementById('detailContent').innerHTML = '<p class="tip">加载失败</p>';
+    function renderDetail(index) {
+      var posts = getPosts();
+      var p = posts[index];
+      if (!p) {
+        document.getElementById('detailContent').innerHTML = '<p class="tip">帖子不存在</p>';
+        return;
       }
+      var html = '<h3>' + esc(p.title) + '</h3><p>作者：' + esc(p.author) + ' | 时间：' + formatTime(p.created_at) + ' | <a class="link" onclick="likePost(' + index + ')">点赞（' + (p.likes||0) + '）</a></p><hr><p>' + esc(p.content) + '</p><hr><h4>回复：</h4>';
+      if (p.replies && p.replies.length) {
+        p.replies.forEach(function(r) {
+          html += '<div><b>' + esc(r.author) + ':</b> ' + esc(r.content) + '</div>';
+        });
+      } else {
+        html += '<p class="tip">暂无回复</p>';
+      }
+      html += '<div class="form-label">回复：</div><input type="text" id="replyContent"><div class="form-label">昵称：</div><input type="text" id="replyAuthor" value="游客"><div style="margin-top:8px;"><button onclick="addReply(' + index + ')">提交回复</button></div>';
+      document.getElementById('detailContent').innerHTML = html;
     }
 
-    async function submitPost() {
+    function submitPost() {
       var title = document.getElementById('postTitle').value.trim();
       var content = document.getElementById('postContent').value.trim();
       var author = document.getElementById('postAuthor').value.trim() || '游客';
       if (!title || !content) { alert('标题和内容不能为空'); return; }
-      var postData = {
+      var posts = getPosts();
+      posts.unshift({
         title: title,
         content: content,
         author: author,
         likes: 0,
         replies: [],
-        createdOn: Date.now()
-      };
-      try {
-        await fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(postData)
-        });
-        document.getElementById('postTitle').value = '';
-        document.getElementById('postContent').value = '';
-        goHome();
-      } catch(e) {
-        alert('发布失败');
-      }
+        created_at: Date.now()
+      });
+      savePosts(posts);
+      document.getElementById('postTitle').value = '';
+      document.getElementById('postContent').value = '';
+      goHome();
     }
 
-    async function addReply(id) {
+    function addReply(index) {
       var content = document.getElementById('replyContent').value.trim();
       var author = document.getElementById('replyAuthor').value.trim() || '游客';
       if (!content) { alert('回复不能为空'); return; }
-      try {
-        var res = await fetch(API + '/' + id);
-        var post = await res.json();
-        post.replies = post.replies || [];
-        post.replies.push({ content: content, author: author });
-        await fetch(API + '/' + id, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(post)
-        });
-        loadDetail(id);
-      } catch(e) {
-        alert('回复失败');
-      }
+      var posts = getPosts();
+      if (!posts[index].replies) posts[index].replies = [];
+      posts[index].replies.push({ content: content, author: author, created_at: Date.now() });
+      savePosts(posts);
+      renderDetail(index);
     }
 
-    async function likePost(id) {
-      try {
-        var res = await fetch(API + '/' + id);
-        var post = await res.json();
-        post.likes = (post.likes || 0) + 1;
-        await fetch(API + '/' + id, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(post)
-        });
-        loadDetail(id);
-      } catch(e) {
-        alert('点赞失败');
-      }
+    function likePost(index) {
+      var posts = getPosts();
+      posts[index].likes = (posts[index].likes || 0) + 1;
+      savePosts(posts);
+      renderDetail(index);
     }
 
     function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
