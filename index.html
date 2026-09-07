@@ -243,15 +243,15 @@
       loadDetail(id);
     }
 
-    // 改进的读取函数：先尝试读取，如果404则强制创建篮子并返回初始数据
+    // 读取数据（如果篮子不存在，使用 POST 创建篮子）
     async function readData() {
       let res = await fetch(API);
       if (res.status === 404) {
-        // 篮子不存在，创建它
-        console.log('篮子不存在，正在创建...');
+        // 篮子不存在，使用 POST 创建篮子
+        console.log('篮子不存在，使用 POST 创建...');
         const initData = { posts: [] };
         const createRes = await fetch(API, {
-          method: 'PUT',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(initData)
         });
