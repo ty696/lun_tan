@@ -5,452 +5,237 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>论坛</title>
   <style>
-    body {
-      background: #ffffff;
-      font-family: SimSun, "宋体", serif;
-      font-size: 14px;
-      color: #000000;
-      margin: 0;
-      padding: 30px 20px;
-      max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    h1 {
-      font-size: 24px;
-      text-align: center;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-    .back-btn {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      font-size: 28px;
-      font-weight: bold;
-      color: #0000cc;
-      text-decoration: none;
-      cursor: pointer;
-      line-height: 1;
-      padding: 5px 10px;
-      border: none;
-      background: none;
-    }
-    .back-btn:hover {
-      color: #ff0000;
-    }
-    .nav {
-      text-align: center;
-      margin-bottom: 15px;
-    }
-    .nav a {
-      color: #0000cc;
-      margin: 0 8px;
-      font-size: 14px;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-    .nav a:hover {
-      color: #ff0000;
-    }
-    .search-row {
-      text-align: center;
-      margin-bottom: 15px;
-    }
-    .search-row input {
-      width: 200px;
-      border: 1px solid #999999;
-      padding: 3px 5px;
-      font-size: 14px;
-      font-family: inherit;
-      background: #ffffff;
-    }
-    .search-row button {
-      border: 1px solid #999999;
-      background: #eeeeee;
-      padding: 3px 16px;
-      font-size: 14px;
-      font-family: inherit;
-      cursor: pointer;
-    }
-    .search-row button:hover {
-      background: #dddddd;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid #999999;
-      background: #ffffff;
-      margin-top: 10px;
-    }
-    th {
-      background: #eeeeee;
-      border: 1px solid #999999;
-      padding: 4px 6px;
-      text-align: left;
-      font-weight: bold;
-    }
-    td {
-      border: 1px solid #999999;
-      padding: 4px 6px;
-    }
-    .link {
-      color: #0000cc;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-    .link:hover {
-      color: #ff0000;
-    }
-    .form-label {
-      margin-top: 8px;
-      margin-bottom: 2px;
-    }
-    input[type="text"],
-    textarea {
-      width: 100%;
-      border: 1px solid #999999;
-      padding: 3px 5px;
-      font-size: 14px;
-      font-family: inherit;
-      background: #ffffff;
-      box-sizing: border-box;
-    }
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-    button {
-      border: 1px solid #999999;
-      background: #eeeeee;
-      padding: 3px 16px;
-      font-size: 14px;
-      font-family: inherit;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-    button:hover {
-      background: #dddddd;
-    }
-    .hidden {
-      display: none;
-    }
-    .tip {
-      text-align: center;
-      color: #555555;
-      padding: 15px;
-    }
-    .reply-item {
-      border-bottom: 1px dashed #999999;
-      padding: 6px 0;
-    }
-    .reply-meta {
-      font-size: 12px;
-      color: #555555;
-    }
-    .error-msg {
-      background: #ffeeee;
-      border: 1px solid #ff9999;
-      padding: 10px;
-      margin: 10px 0;
-      font-size: 13px;
-      color: #cc0000;
-    }
+    body { background:#fff; font-family:SimSun; font-size:14px; margin:0; padding:30px 20px; max-width:700px; margin:auto; }
+    h1 { text-align:center; }
+    .nav { text-align:center; margin-bottom:15px; }
+    .nav a { color:#00c; margin:0 10px; cursor:pointer; text-decoration:underline; }
+    table { width:100%; border-collapse:collapse; border:1px solid #999; }
+    th,td { border:1px solid #999; padding:4px 6px; text-align:left; }
+    .link { color:#00c; text-decoration:underline; cursor:pointer; }
+    input,textarea { width:100%; border:1px solid #999; padding:3px; font-size:14px; box-sizing:border-box; }
+    button { border:1px solid #999; background:#eee; padding:4px 16px; cursor:pointer; }
+    .hidden { display:none; }
+    .tip { text-align:center; color:#555; padding:15px; }
+    .back-btn { position:absolute; top:15px; left:15px; font-size:28px; cursor:pointer; color:#00c; }
   </style>
 </head>
 <body>
-
   <button class="back-btn hidden" id="backBtn" onclick="goHome()">&#10094;</button>
-
   <h1>论坛</h1>
-
   <div class="nav" id="navBar">
     <a href="#" onclick="showNewPost()">发帖</a>
     <a href="#" onclick="showAllPosts()">浏览</a>
+    <a href="#" onclick="showSearch()">搜索</a>
   </div>
 
-  <div class="search-row" id="searchRow">
-    <input type="text" id="searchInput" placeholder="搜索...">
-    <button onclick="searchPosts()">搜索</button>
-  </div>
-
-  <div id="resultPanel" class="hidden">
-    <div id="resultContent"></div>
-  </div>
-
+  <div id="resultPanel" class="hidden"><div id="resultContent"></div></div>
   <div id="newPostPanel" class="hidden">
-    <div class="form-label">标题：</div>
-    <input type="text" id="postTitle" maxlength="100">
-    <div class="form-label">内容：</div>
-    <textarea id="postContent" maxlength="5000"></textarea>
-    <div class="form-label">昵称：</div>
-    <input type="text" id="postAuthor" maxlength="20" value="游客">
-    <div>
-      <button onclick="submitPost()">发布</button>
-      <button onclick="goHome()">返回</button>
-    </div>
+    <div>标题：<input type="text" id="postTitle"></div>
+    <div style="margin-top:8px;">内容：<textarea id="postContent"></textarea></div>
+    <div style="margin-top:8px;">昵称：<input type="text" id="postAuthor" value="游客"></div>
+    <div style="margin-top:8px;"><button onclick="submitPost()">发布</button> <button onclick="goHome()">返回</button></div>
   </div>
-
-  <div id="detailPanel" class="hidden">
-    <div id="detailContent"></div>
+  <div id="searchPanel" class="hidden">
+    <div>搜索：<input type="text" id="searchInput" placeholder="关键词"><button onclick="searchPosts()">搜索</button></div>
+    <div id="searchResults" style="margin-top:10px;"></div>
   </div>
+  <div id="detailPanel" class="hidden"><div id="detailContent"></div></div>
 
   <script>
-    var PANTRY_ID = 'ebd77404-1677-4b4c-bc2b-2f4d76a89696';
-    var BASKET = 'posts';
-    var API = 'https://getpantry.cloud/apiv1/pantry/' + PANTRY_ID + '/basket/' + BASKET;
-    var currentPostId = null;
+    // 你的 KVdb Bucket ID
+    var BUCKET_ID = 'DHwa47crUubv8NbeJPF2y5';
+    var API = 'https://kvdb.io/' + BUCKET_ID + '/posts';  // 使用单一键 'posts' 存储整个帖子数组
 
     function goHome() {
       document.getElementById('navBar').classList.remove('hidden');
-      document.getElementById('searchRow').classList.remove('hidden');
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('searchPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
       document.getElementById('backBtn').classList.add('hidden');
     }
-
     function showNewPost() {
       document.getElementById('navBar').classList.add('hidden');
-      document.getElementById('searchRow').classList.add('hidden');
-      document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.remove('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
+      document.getElementById('searchPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
       document.getElementById('backBtn').classList.remove('hidden');
     }
-
     function showAllPosts() {
       document.getElementById('navBar').classList.add('hidden');
-      document.getElementById('searchRow').classList.add('hidden');
       document.getElementById('resultPanel').classList.remove('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('searchPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+      document.getElementById('backBtn').classList.remove('hidden');
+      loadPosts();
+    }
+    function showSearch() {
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchPanel').classList.remove('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
       document.getElementById('detailPanel').classList.add('hidden');
       document.getElementById('backBtn').classList.remove('hidden');
-      loadAllPosts();
     }
-
-    function showDetail(id) {
-      currentPostId = id;
+    function showDetail(postId) {
       document.getElementById('navBar').classList.add('hidden');
-      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('detailPanel').classList.remove('hidden');
       document.getElementById('resultPanel').classList.add('hidden');
       document.getElementById('newPostPanel').classList.add('hidden');
-      document.getElementById('detailPanel').classList.remove('hidden');
+      document.getElementById('searchPanel').classList.add('hidden');
       document.getElementById('backBtn').classList.remove('hidden');
-      loadDetail(id);
+      loadDetail(postId);
     }
 
-    async function readData() {
-      let res = await fetch(API);
-      if (res.status === 404) {
-        // 篮子不存在，用 POST 创建
-        const initData = { posts: [] };
-        const createRes = await fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(initData)
-        });
-        if (!createRes.ok) {
-          throw new Error('创建篮子失败 HTTP ' + createRes.status);
+    // 读取整个帖子数组
+    async function getPostsArray() {
+      try {
+        let res = await fetch(API);
+        if (res.status === 404) {
+          // 如果还没有数据，初始化空数组并写入
+          await fetch(API, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([])
+          });
+          return [];
         }
-        return initData;
-      }
-      if (!res.ok) {
-        throw new Error('读取失败 HTTP ' + res.status);
-      }
-      return await res.json();
-    }
-
-    async function writeData(data) {
-      const res = await fetch(API, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        throw new Error('写入失败 HTTP ' + res.status);
-      }
-      return true;
-    }
-
-    async function loadAllPosts() {
-      try {
-        const data = await readData();
-        const posts = data.posts || [];
-        renderPostTable(posts);
+        if (!res.ok) throw new Error('读取失败');
+        return await res.json();
       } catch(e) {
-        document.getElementById('resultContent').innerHTML = '<div class="error-msg">加载失败：' + e.message + '</div>';
+        console.error(e);
+        return [];
       }
     }
 
-    async function searchPosts() {
-      const keyword = document.getElementById('searchInput').value.trim();
-      if (!keyword) {
-        alert('请输入关键词');
-        return;
-      }
+    // 写入整个帖子数组
+    async function savePostsArray(posts) {
       try {
-        const data = await readData();
-        const posts = (data.posts || []).filter(p => 
-          p.title.includes(keyword) || p.content.includes(keyword)
-        );
-        document.getElementById('navBar').classList.add('hidden');
-        document.getElementById('searchRow').classList.add('hidden');
-        document.getElementById('resultPanel').classList.remove('hidden');
-        document.getElementById('newPostPanel').classList.add('hidden');
-        document.getElementById('detailPanel').classList.add('hidden');
-        document.getElementById('backBtn').classList.remove('hidden');
-        renderPostTable(posts);
+        let res = await fetch(API, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(posts)
+        });
+        return res.ok;
       } catch(e) {
-        alert('搜索失败：' + e.message);
+        console.error(e);
+        return false;
       }
     }
 
-    function renderPostTable(posts) {
-      const container = document.getElementById('resultContent');
-      if (posts.length === 0) {
+    async function loadPosts() {
+      let posts = await getPostsArray();
+      renderList(posts);
+    }
+
+    function renderList(posts) {
+      let container = document.getElementById('resultContent');
+      if (!posts || posts.length === 0) {
         container.innerHTML = '<p class="tip">暂无帖子</p>';
         return;
       }
-      let html = '<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
-      posts.forEach(p => {
-        const replyCount = p.replies ? p.replies.length : 0;
-        html += `
-          <tr>
-            <td><a href="#" class="link" onclick="showDetail(${p.id})">${esc(p.title)}</a></td>
-            <td>${esc(p.author)}</td>
-            <td>${replyCount}</td>
-            <td>${p.likes || 0}</td>
-            <td>${formatTime(p.created_at)}</td>
-          </tr>`;
+      let html = '<table><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr>';
+      posts.forEach(function(p) {
+        html += '<tr><td><a class="link" onclick="showDetail(\'' + p.id + '\')">' + esc(p.title) + '</a></td><td>' + esc(p.author) + '</td><td>' + (p.replies ? p.replies.length : 0) + '</td><td>' + (p.likes || 0) + '</td><td>' + formatTime(p.createdOn) + '</td></tr>';
       });
-      html += '</tbody></table>';
+      html += '</table>';
       container.innerHTML = html;
     }
 
-    async function loadDetail(id) {
-      try {
-        const data = await readData();
-        const p = (data.posts || []).find(item => item.id === id);
-        if (!p) {
-          document.getElementById('detailContent').innerHTML = '<p class="tip">帖子不存在</p>';
-          return;
-        }
-        let html = `
-          <h3>${esc(p.title)}</h3>
-          <p>作者：${esc(p.author)} | 时间：${formatTime(p.created_at)} | <a href="#" class="link" onclick="likePost(${p.id})">点赞（${p.likes || 0}）</a></p>
-          <hr>
-          <p>${esc(p.content)}</p>
-          <hr>
-          <h4>回复：</h4>`;
-        if (p.replies && p.replies.length > 0) {
-          p.replies.forEach(r => {
-            html += `
-              <div class="reply-item">
-                <div class="reply-meta">${esc(r.author)} | ${formatTime(r.created_at)}</div>
-                <div>${esc(r.content)}</div>
-              </div>`;
-          });
-        } else {
-          html += '<p class="tip">暂无回复</p>';
-        }
-        html += `
-          <div class="form-label">回复：</div>
-          <input type="text" id="replyContent" maxlength="1000">
-          <div class="form-label">昵称：</div>
-          <input type="text" id="replyAuthor" maxlength="20" value="游客">
-          <div><button onclick="submitReply(${p.id})">提交回复</button></div>`;
-        document.getElementById('detailContent').innerHTML = html;
-      } catch(e) {
-        document.getElementById('detailContent').innerHTML = '<p class="tip">加载失败：' + e.message + '</p>';
+    async function loadDetail(postId) {
+      let posts = await getPostsArray();
+      let p = posts.find(item => item.id === postId);
+      if (!p) {
+        document.getElementById('detailContent').innerHTML = '<p class="tip">帖子不存在</p>';
+        return;
       }
+      let html = '<h3>' + esc(p.title) + '</h3><p>作者：' + esc(p.author) + ' | 时间：' + formatTime(p.createdOn) + ' | <a class="link" onclick="likePost(\'' + p.id + '\')">点赞（' + (p.likes||0) + '）</a></p><hr><p>' + esc(p.content) + '</p><hr><h4>回复：</h4>';
+      if (p.replies && p.replies.length) {
+        p.replies.forEach(function(r) {
+          html += '<div><b>' + esc(r.author) + ':</b> ' + esc(r.content) + '</div>';
+        });
+      } else {
+        html += '<p class="tip">暂无回复</p>';
+      }
+      html += '<div style="margin-top:10px;">回复：<input type="text" id="replyContent"><br>昵称：<input type="text" id="replyAuthor" value="游客"><br><button onclick="addReply(\'' + p.id + '\')">提交回复</button></div>';
+      document.getElementById('detailContent').innerHTML = html;
     }
 
     async function submitPost() {
-      const title = document.getElementById('postTitle').value.trim();
-      const content = document.getElementById('postContent').value.trim();
-      const author = document.getElementById('postAuthor').value.trim() || '游客';
-      if (!title || !content) {
-        alert('标题和内容不能为空');
-        return;
-      }
-      try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const newPost = {
-          id: Date.now(),
-          title,
-          content,
-          author,
-          likes: 0,
-          replies: [],
-          created_at: Date.now()
-        };
-        posts.unshift(newPost);
-        await writeData({ posts });
+      let title = document.getElementById('postTitle').value.trim();
+      let content = document.getElementById('postContent').value.trim();
+      let author = document.getElementById('postAuthor').value.trim() || '游客';
+      if (!title || !content) { alert('标题和内容不能为空'); return; }
+      let posts = await getPostsArray();
+      let newPost = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        title: title,
+        content: content,
+        author: author,
+        likes: 0,
+        replies: [],
+        createdOn: Date.now()
+      };
+      posts.unshift(newPost);
+      let ok = await savePostsArray(posts);
+      if (ok) {
         document.getElementById('postTitle').value = '';
         document.getElementById('postContent').value = '';
         goHome();
-      } catch(e) {
-        alert('发布失败：' + e.message);
+      } else {
+        alert('发布失败');
       }
     }
 
-    async function submitReply(postId) {
-      const content = document.getElementById('replyContent').value.trim();
-      const author = document.getElementById('replyAuthor').value.trim() || '游客';
-      if (!content) {
-        alert('回复不能为空');
-        return;
-      }
-      try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const post = posts.find(p => p.id === postId);
-        if (!post) {
-          alert('帖子不存在');
-          return;
-        }
-        if (!post.replies) post.replies = [];
-        post.replies.push({
-          content,
-          author,
-          created_at: Date.now()
-        });
-        await writeData({ posts });
-        loadDetail(postId);
-      } catch(e) {
-        alert('回复失败：' + e.message);
-      }
+    async function addReply(postId) {
+      let content = document.getElementById('replyContent').value.trim();
+      let author = document.getElementById('replyAuthor').value.trim() || '游客';
+      if (!content) { alert('回复不能为空'); return; }
+      let posts = await getPostsArray();
+      let p = posts.find(item => item.id === postId);
+      if (!p) { alert('帖子不存在'); return; }
+      p.replies = p.replies || [];
+      p.replies.push({ content: content, author: author });
+      await savePostsArray(posts);
+      loadDetail(postId);
     }
 
     async function likePost(postId) {
-      try {
-        const data = await readData();
-        const posts = data.posts || [];
-        const post = posts.find(p => p.id === postId);
-        if (!post) return;
-        post.likes = (post.likes || 0) + 1;
-        await writeData({ posts });
-        loadDetail(postId);
-      } catch(e) {
-        alert('点赞失败：' + e.message);
+      let posts = await getPostsArray();
+      let p = posts.find(item => item.id === postId);
+      if (!p) return;
+      p.likes = (p.likes || 0) + 1;
+      await savePostsArray(posts);
+      loadDetail(postId);
+    }
+
+    async function searchPosts() {
+      let keyword = document.getElementById('searchInput').value.trim();
+      if (!keyword) { alert('请输入关键词'); return; }
+      let posts = await getPostsArray();
+      let filtered = posts.filter(function(p) {
+        return (p.title && p.title.indexOf(keyword) !== -1) || (p.content && p.content.indexOf(keyword) !== -1);
+      });
+      let html = '';
+      if (!filtered.length) {
+        html = '<p class="tip">没有找到相关帖子</p>';
+      } else {
+        html = '<table><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th></tr>';
+        filtered.forEach(function(p) {
+          html += '<tr><td><a class="link" onclick="showDetail(\'' + p.id + '\')">' + esc(p.title) + '</a></td><td>' + esc(p.author) + '</td><td>' + (p.replies ? p.replies.length : 0) + '</td><td>' + (p.likes || 0) + '</td></tr>';
+        });
+        html += '</table>';
       }
+      document.getElementById('searchResults').innerHTML = html;
     }
 
-    function esc(str) {
-      if (!str) return '';
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
+    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function formatTime(ts) {
       if (!ts) return '';
-      const d = new Date(ts);
-      const m = (d.getMonth()+1).toString().padStart(2,'0');
-      const day = d.getDate().toString().padStart(2,'0');
-      const h = d.getHours().toString().padStart(2,'0');
-      const min = d.getMinutes().toString().padStart(2,'0');
-      return m + '-' + day + ' ' + h + ':' + min;
+      var d = new Date(ts);
+      return (d.getMonth()+1) + '-' + d.getDate() + ' ' + d.getHours() + ':' + d.getMinutes();
     }
 
     goHome();
