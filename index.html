@@ -1,1012 +1,283 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>知言社区</title>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
-            --radius: 12px;
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--bg);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-            color: var(--text);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-
-        /* 顶部导航 */
-        .header {
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-        }
-        .header-inner {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        .logo {
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--primary);
-            letter-spacing: -0.5px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .logo span {
-            color: var(--text);
-            font-weight: 400;
-            font-size: 14px;
-            margin-left: 4px;
-            letter-spacing: 0;
-        }
-        .search-box {
-            flex: 1;
-            min-width: 200px;
-            display: flex;
-            align-items: center;
-            background: var(--bg);
-            border: 2px solid var(--border);
-            border-radius: 24px;
-            padding: 0 14px;
-            transition: all 0.2s;
-        }
-        .search-box:focus-within {
-            border-color: var(--primary);
-            background: #fff;
-        }
-        .search-box input {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 9px 8px;
-            font-size: 14px;
-            outline: none;
-            color: var(--text);
-        }
-        .search-box button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px 6px;
-            font-size: 16px;
-            color: var(--text-secondary);
-        }
-        .nav-actions {
-            display: flex;
-            gap: 8px;
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 9px 18px;
-            border-radius: 24px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            text-decoration: none;
-        }
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-        }
-        .btn-primary:hover {
-            background: var(--primary-hover);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-        .btn-outline {
-            background: transparent;
-            color: var(--text);
-            border: 2px solid var(--border);
-        }
-        .btn-outline:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        /* 分类导航 */
-        .categories {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 16px 20px 0;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .category {
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            background: var(--card);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-            transition: all 0.2s;
-        }
-        .category:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .category.active {
-            background: var(--primary);
-            color: #fff;
-            border-color: var(--primary);
-        }
-
-        /* 主体内容 */
-        .main {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* 帖子卡片 */
-        .post-card {
-            background: var(--card);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 20px 24px;
-            margin-bottom: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-        .post-card:hover {
-            box-shadow: var(--shadow-lg);
-            border-color: var(--border);
-        }
-        .post-card-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-        .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 15px;
-            color: #fff;
-            flex-shrink: 0;
-        }
-        .post-author {
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .post-time {
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
-        .post-title {
-            font-size: 17px;
-            font-weight: 700;
-            margin-bottom: 6px;
-            line-height: 1.4;
-        }
-        .post-excerpt {
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-bottom: 12px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .post-tags {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .tag {
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            background: #f1f5f9;
-            color: var(--text-secondary);
-        }
-        .post-images-preview {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .post-images-preview img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-        .post-card-footer {
-            display: flex;
-            gap: 18px;
-            color: var(--text-secondary);
-            font-size: 13px;
-        }
-        .post-stat {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .post-stat:hover {
-            color: var(--primary);
-        }
-
-        /* 帖子详情 */
-        .detail-container {
-            background: var(--card);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 28px 32px;
-        }
-        .detail-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 16px;
-            transition: color 0.2s;
-        }
-        .detail-back:hover {
-            color: var(--primary);
-        }
-        .detail-title {
-            font-size: 24px;
-            font-weight: 800;
-            line-height: 1.4;
-            margin-bottom: 12px;
-        }
-        .detail-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .detail-content {
-            font-size: 15px;
-            line-height: 1.8;
-            margin-bottom: 24px;
-            white-space: pre-wrap;
-        }
-        .detail-images {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
-        }
-        .detail-images img {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            object-fit: cover;
-        }
-        .detail-actions {
-            display: flex;
-            gap: 16px;
-            padding: 16px 0;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 24px;
-        }
-        .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-secondary);
-        }
-        .action-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .action-btn.liked {
-            background: #eef2ff;
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        /* 回复区 */
-        .reply-section h3 {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 16px;
-        }
-        .reply-item {
-            display: flex;
-            gap: 12px;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .reply-body {
-            flex: 1;
-        }
-        .reply-author {
-            font-weight: 600;
-            font-size: 13px;
-        }
-        .reply-time {
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
-        .reply-text {
-            font-size: 14px;
-            margin-top: 4px;
-        }
-        .reply-form {
-            display: flex;
-            gap: 10px;
-            margin-top: 16px;
-            align-items: flex-start;
-        }
-        .reply-form input {
-            flex: 1;
-            padding: 10px 14px;
-            border: 2px solid var(--border);
-            border-radius: 24px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .reply-form input:focus {
-            border-color: var(--primary);
-        }
-
-        /* 发帖弹窗 */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-            padding: 16px;
-            backdrop-filter: blur(4px);
-        }
-        .modal {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 28px 32px;
-            width: 100%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-lg);
-        }
-        .modal h2 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 16px;
-        }
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 6px;
-            color: var(--text-secondary);
-        }
-        .form-group input[type="text"],
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 10px 14px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            border-color: var(--primary);
-        }
-        .form-group textarea {
-            min-height: 140px;
-            resize: vertical;
-        }
-        .image-upload {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 8px;
-        }
-        .image-upload img {
-            width: 70px;
-            height: 70px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-        .upload-btn {
-            width: 70px;
-            height: 70px;
-            border: 2px dashed var(--border);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-            background: none;
-        }
-        .upload-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
-        /* 空状态 */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-        .empty-state .icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-        .empty-state h3 {
-            font-size: 18px;
-            color: var(--text);
-            margin-bottom: 8px;
-        }
-
-        /* 响应式 */
-        @media (max-width: 600px) {
-            .header-inner {
-                padding: 10px 14px;
-                gap: 10px;
-            }
-            .logo {
-                font-size: 18px;
-            }
-            .main {
-                padding: 14px;
-            }
-            .post-card {
-                padding: 16px 18px;
-            }
-            .detail-container {
-                padding: 20px 18px;
-            }
-            .modal {
-                padding: 20px 18px;
-            }
-            .btn {
-                padding: 8px 14px;
-                font-size: 13px;
-            }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>论坛</title>
+  <style>
+    body {
+      background: #ffffff;
+      font-family: SimSun, "宋体", serif;
+      font-size: 14px;
+      color: #000000;
+      margin: 0;
+      padding: 30px 20px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 { font-size: 24px; text-align: center; margin-bottom: 10px; font-weight: bold; }
+    .back-btn {
+      position: absolute; top: 15px; left: 15px; font-size: 28px; font-weight: bold;
+      color: #0000cc; text-decoration: none; cursor: pointer; line-height: 1;
+      padding: 5px 10px; border: none; background: none;
+    }
+    .back-btn:hover { color: #ff0000; }
+    .nav { text-align: center; margin-bottom: 15px; }
+    .nav a { color: #0000cc; margin: 0 8px; font-size: 14px; text-decoration: underline; cursor: pointer; }
+    .nav a:hover { color: #ff0000; }
+    .search-row { text-align: center; margin-bottom: 15px; }
+    .search-row input { width: 200px; border: 1px solid #999999; padding: 3px 5px; font-size: 14px; font-family: inherit; background: #ffffff; }
+    .search-row button { border: 1px solid #999999; background: #eeeeee; padding: 3px 16px; font-size: 14px; font-family: inherit; cursor: pointer; }
+    .search-row button:hover { background: #dddddd; }
+    table { width: 100%; border-collapse: collapse; border: 1px solid #999999; background: #ffffff; margin-top: 10px; }
+    th { background: #eeeeee; border: 1px solid #999999; padding: 4px 6px; text-align: left; font-weight: bold; }
+    td { border: 1px solid #999999; padding: 4px 6px; }
+    .link { color: #0000cc; text-decoration: underline; cursor: pointer; }
+    .link:hover { color: #ff0000; }
+    .form-label { margin-top: 8px; margin-bottom: 2px; }
+    input[type="text"], textarea { width: 100%; border: 1px solid #999999; padding: 3px 5px; font-size: 14px; font-family: inherit; background: #ffffff; box-sizing: border-box; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { border: 1px solid #999999; background: #eeeeee; padding: 3px 16px; font-size: 14px; font-family: inherit; cursor: pointer; margin-top: 8px; }
+    button:hover { background: #dddddd; }
+    .hidden { display: none; }
+    .tip { text-align: center; color: #555555; padding: 15px; }
+    .reply-item { border-bottom: 1px dashed #999999; padding: 6px 0; }
+    .reply-meta { font-size: 12px; color: #555555; }
+    .error-msg { background: #ffeeee; border: 1px solid #ff9999; padding: 10px; margin: 10px 0; font-size: 13px; color: #cc0000; }
+    .notice { background: #ffffdd; border: 1px solid #dddd99; padding: 8px; margin-bottom: 15px; font-size: 12px; color: #666600; text-align: center; }
+  </style>
+  <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
 
-    <!-- 顶部导航 -->
-    <header class="header">
-        <div class="header-inner">
-            <div class="logo" onclick="goHome()">知言<span>社区</span></div>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="搜索帖子、作者、标签..." onkeydown="if(event.key==='Enter')searchPosts()">
-                <button onclick="searchPosts()">🔍</button>
-            </div>
-            <div class="nav-actions">
-                <button class="btn btn-outline" onclick="showAllPosts()">浏览</button>
-                <button class="btn btn-primary" onclick="showNewPost()">+ 发帖</button>
-            </div>
-        </div>
-        <div class="categories" id="categoryBar">
-            <div class="category active" data-cat="all" onclick="filterCategory('all', this)">全部</div>
-            <div class="category" data-cat="讨论" onclick="filterCategory('讨论', this)">讨论</div>
-            <div class="category" data-cat="论文" onclick="filterCategory('论文', this)">论文</div>
-            <div class="category" data-cat="分享" onclick="filterCategory('分享', this)">分享</div>
-            <div class="category" data-cat="求助" onclick="filterCategory('求助', this)">求助</div>
-        </div>
-    </header>
+  <button class="back-btn hidden" id="backBtn" onclick="goHome()">&#10094;</button>
+  <h1>论坛</h1>
 
-    <!-- 主体 -->
-    <main class="main" id="mainContent">
-        <!-- 帖子列表 -->
-        <div id="listPanel">
-            <div id="postList"></div>
-        </div>
+  <div class="notice">数据由 Puter.js 提供，免费、免注册，稳定可用。</div>
 
-        <!-- 帖子详情 -->
-        <div id="detailPanel" class="hidden"></div>
+  <div class="nav" id="navBar">
+    <a href="#" onclick="showNewPost()">发帖</a>
+    <a href="#" onclick="showAllPosts()">浏览</a>
+  </div>
 
-        <!-- 发帖弹窗 -->
-        <div id="newPostModal" class="modal-overlay hidden" onclick="if(event.target===this)closeNewPost()">
-            <div class="modal">
-                <h2>发布新帖</h2>
-                <div class="form-group">
-                    <label>分类</label>
-                    <select id="postCategory">
-                        <option value="讨论">讨论</option>
-                        <option value="论文">论文</option>
-                        <option value="分享">分享</option>
-                        <option value="求助">求助</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>标题</label>
-                    <input type="text" id="postTitle" placeholder="一句话概括你的主题..." maxlength="100">
-                </div>
-                <div class="form-group">
-                    <label>内容（支持长文/论文）</label>
-                    <textarea id="postContent" placeholder="写下你的想法、文章或论文内容..." maxlength="20000"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>添加图片（可多张）</label>
-                    <div class="image-upload" id="imagePreview"></div>
-                    <input type="file" id="imageInput" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event)">
-                    <button class="upload-btn" onclick="document.getElementById('imageInput').click()">+</button>
-                </div>
-                <div class="form-group">
-                    <label>昵称</label>
-                    <input type="text" id="postAuthor" value="知友" maxlength="20">
-                </div>
-                <div class="modal-actions">
-                    <button class="btn btn-outline" onclick="closeNewPost()">取消</button>
-                    <button class="btn btn-primary" onclick="submitPost()">发布帖子</button>
-                </div>
-            </div>
-        </div>
-    </main>
+  <div class="search-row" id="searchRow">
+    <input type="text" id="searchInput" placeholder="搜索...">
+    <button onclick="searchPosts()">搜索</button>
+  </div>
 
-    <script>
-        // ============ 数据存储 ============
-        var STORAGE_KEY = 'zhiyan_forum_data_v1';
+  <div id="resultPanel" class="hidden"><div id="resultContent"></div></div>
 
-        function getData() {
-            try {
-                var data = localStorage.getItem(STORAGE_KEY);
-                if (!data) return { posts: [] };
-                return JSON.parse(data);
-            } catch (e) {
-                return { posts: [] };
-            }
-        }
+  <div id="newPostPanel" class="hidden">
+    <div class="form-label">标题：</div>
+    <input type="text" id="postTitle" maxlength="100">
+    <div class="form-label">内容：</div>
+    <textarea id="postContent" maxlength="5000"></textarea>
+    <div class="form-label">昵称：</div>
+    <input type="text" id="postAuthor" maxlength="20" value="游客">
+    <div>
+      <button onclick="submitPost()">发布</button>
+      <button onclick="goHome()">返回</button>
+    </div>
+  </div>
 
-        function saveData(data) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-            } catch (e) {}
-        }
+  <div id="detailPanel" class="hidden"><div id="detailContent"></div></div>
 
-        // ============ 状态 ============
-        var currentFilter = 'all';
-        var currentDetailId = null;
-        var uploadedImages = [];
+  <script>
+    var STORAGE_KEY = 'forum_posts_data';
 
-        // ============ 工具函数 ============
-        function generateId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
-        }
+    // 从 Puter 云端读取所有帖子
+    async function readData() {
+      try {
+        var data = await puter.kv.get(STORAGE_KEY);
+        return data || { posts: [] };
+      } catch(e) {
+        console.error("读取数据失败:", e);
+        return { posts: [] };
+      }
+    }
 
-        function formatTime(ts) {
-            var d = new Date(ts);
-            var now = new Date();
-            var diff = (now - d) / 1000;
-            if (diff < 60) return '刚刚';
-            if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
-            if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
-            if (diff < 604800) return Math.floor(diff / 86400) + ' 天前';
-            var m = (d.getMonth() + 1).toString().padStart(2, '0');
-            var day = d.getDate().toString().padStart(2, '0');
-            return m + '-' + day;
-        }
+    // 写入数据到 Puter 云端
+    async function writeData(data) {
+      try {
+        await puter.kv.set(STORAGE_KEY, data);
+        return true;
+      } catch(e) {
+        console.error("写入数据失败:", e);
+        return false;
+      }
+    }
 
-        function esc(str) {
-            if (!str) return '';
-            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
+    function goHome() {
+      document.getElementById('navBar').classList.remove('hidden');
+      document.getElementById('searchRow').classList.remove('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+      document.getElementById('backBtn').classList.add('hidden');
+    }
 
-        function getAvatarColor(name) {
-            var colors = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
-            var sum = 0;
-            for (var i = 0; i < name.length; i++) sum += name.charCodeAt(i);
-            return colors[sum % colors.length];
-        }
+    function showNewPost() {
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
+      document.getElementById('newPostPanel').classList.remove('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+      document.getElementById('backBtn').classList.remove('hidden');
+    }
 
-        function getAvatarInitial(name) {
-            return name.charAt(0).toUpperCase();
-        }
+    async function showAllPosts() {
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('resultPanel').classList.remove('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+      document.getElementById('backBtn').classList.remove('hidden');
+      document.getElementById('resultContent').innerHTML = '<p class="tip">加载中...</p>';
+      var data = await readData();
+      renderPostTable(data.posts || []);
+    }
 
-        function getExcerpt(content, length) {
-            if (!content) return '';
-            var clean = content.replace(/\n/g, ' ').trim();
-            if (clean.length <= length) return clean;
-            return clean.slice(0, length) + '...';
-        }
+    async function showDetail(id) {
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('resultPanel').classList.add('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.remove('hidden');
+      document.getElementById('backBtn').classList.remove('hidden');
+      await loadDetail(id);
+    }
 
-        // ============ 页面导航 ============
-        function goHome() {
-            currentFilter = 'all';
-            document.getElementById('listPanel').classList.remove('hidden');
-            document.getElementById('detailPanel').classList.add('hidden');
-            renderCategoryBar();
-            renderPostList();
-        }
+    async function searchPosts() {
+      var keyword = document.getElementById('searchInput').value.trim();
+      if (!keyword) { alert('请输入关键词'); return; }
+      document.getElementById('navBar').classList.add('hidden');
+      document.getElementById('searchRow').classList.add('hidden');
+      document.getElementById('resultPanel').classList.remove('hidden');
+      document.getElementById('newPostPanel').classList.add('hidden');
+      document.getElementById('detailPanel').classList.add('hidden');
+      document.getElementById('backBtn').classList.remove('hidden');
+      document.getElementById('resultContent').innerHTML = '<p class="tip">搜索中...</p>';
+      var data = await readData();
+      var posts = (data.posts || []).filter(function(p) {
+        return p.title.indexOf(keyword) !== -1 || p.content.indexOf(keyword) !== -1;
+      });
+      renderPostTable(posts);
+    }
 
-        function showAllPosts() {
-            document.getElementById('listPanel').classList.remove('hidden');
-            document.getElementById('detailPanel').classList.add('hidden');
-            renderPostList();
-        }
+    function renderPostTable(posts) {
+      var container = document.getElementById('resultContent');
+      if (posts.length === 0) {
+        container.innerHTML = '<p class="tip">暂无帖子</p>';
+        return;
+      }
+      var html = '<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
+      posts.forEach(function(p) {
+        var replyCount = p.replies ? p.replies.length : 0;
+        html += '<tr>' +
+          '<td><a href="#" class="link" onclick="showDetail(' + p.id + ')">' + esc(p.title) + '</a></td>' +
+          '<td>' + esc(p.author) + '</td>' +
+          '<td>' + replyCount + '</td>' +
+          '<td>' + (p.likes || 0) + '</td>' +
+          '<td>' + formatTime(p.created_at) + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
 
-        function showNewPost() {
-            document.getElementById('newPostModal').classList.remove('hidden');
-            uploadedImages = [];
-            document.getElementById('imagePreview').innerHTML = '';
-            document.getElementById('postTitle').value = '';
-            document.getElementById('postContent').value = '';
-        }
+    async function loadDetail(id) {
+      var data = await readData();
+      var p = (data.posts || []).find(function(item) { return item.id === id; });
+      if (!p) {
+        document.getElementById('detailContent').innerHTML = '<p class="tip">帖子不存在</p>';
+        return;
+      }
+      var html = '<h3>' + esc(p.title) + '</h3>' +
+        '<p>作者：' + esc(p.author) + ' | 时间：' + formatTime(p.created_at) +
+        ' | <a href="#" class="link" onclick="likePost(' + p.id + ')">点赞（' + (p.likes || 0) + '）</a></p>' +
+        '<hr><p>' + esc(p.content) + '</p><hr><h4>回复：</h4>';
+      if (p.replies && p.replies.length > 0) {
+        p.replies.forEach(function(r) {
+          html += '<div class="reply-item">' +
+            '<div class="reply-meta">' + esc(r.author) + ' | ' + formatTime(r.created_at) + '</div>' +
+            '<div>' + esc(r.content) + '</div></div>';
+        });
+      } else {
+        html += '<p class="tip">暂无回复</p>';
+      }
+      html += '<div class="form-label">回复：</div>' +
+        '<input type="text" id="replyContent" maxlength="1000">' +
+        '<div class="form-label">昵称：</div>' +
+        '<input type="text" id="replyAuthor" maxlength="20" value="游客">' +
+        '<div><button onclick="submitReply(' + p.id + ')">提交回复</button></div>';
+      document.getElementById('detailContent').innerHTML = html;
+    }
 
-        function closeNewPost() {
-            document.getElementById('newPostModal').classList.add('hidden');
-        }
+    async function submitPost() {
+      var title = document.getElementById('postTitle').value.trim();
+      var content = document.getElementById('postContent').value.trim();
+      var author = document.getElementById('postAuthor').value.trim() || '游客';
+      if (!title || !content) { alert('标题和内容不能为空'); return; }
+      var data = await readData();
+      var posts = data.posts || [];
+      posts.unshift({
+        id: Date.now(),
+        title: title,
+        content: content,
+        author: author,
+        likes: 0,
+        replies: [],
+        created_at: Date.now()
+      });
+      var ok = await writeData({ posts: posts });
+      if (!ok) { alert('发布失败，请重试'); return; }
+      document.getElementById('postTitle').value = '';
+      document.getElementById('postContent').value = '';
+      goHome();
+    }
 
-        function showDetail(id) {
-            currentDetailId = id;
-            document.getElementById('listPanel').classList.add('hidden');
-            document.getElementById('detailPanel').classList.remove('hidden');
-            renderDetail(id);
-        }
+    async function submitReply(postId) {
+      var content = document.getElementById('replyContent').value.trim();
+      var author = document.getElementById('replyAuthor').value.trim() || '游客';
+      if (!content) { alert('回复不能为空'); return; }
+      var data = await readData();
+      var posts = data.posts || [];
+      var post = posts.find(function(p) { return p.id === postId; });
+      if (!post) { alert('帖子不存在'); return; }
+      if (!post.replies) post.replies = [];
+      post.replies.push({ content: content, author: author, created_at: Date.now() });
+      var ok = await writeData({ posts: posts });
+      if (!ok) { alert('回复失败，请重试'); return; }
+      await loadDetail(postId);
+    }
 
-        function filterCategory(cat, element) {
-            currentFilter = cat;
-            var cats = document.querySelectorAll('.category');
-            cats.forEach(function(c) { c.classList.remove('active'); });
-            element.classList.add('active');
-            renderPostList();
-        }
+    async function likePost(postId) {
+      var data = await readData();
+      var posts = data.posts || [];
+      var post = posts.find(function(p) { return p.id === postId; });
+      if (!post) return;
+      post.likes = (post.likes || 0) + 1;
+      await writeData({ posts: posts });
+      await loadDetail(postId);
+    }
 
-        function renderCategoryBar() {
-            var cats = document.querySelectorAll('.category');
-            cats.forEach(function(c) {
-                c.classList.toggle('active', c.dataset.cat === currentFilter);
-            });
-        }
+    function esc(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
-        // ============ 帖子列表 ============
-        function renderPostList() {
-            var data = getData();
-            var posts = data.posts || [];
-            if (currentFilter !== 'all') {
-                posts = posts.filter(function(p) { return p.category === currentFilter; });
-            }
-            posts.sort(function(a, b) { return (b.created_at || 0) - (a.created_at || 0); });
+    function formatTime(ts) {
+      if (!ts) return '';
+      var d = new Date(ts);
+      var m = (d.getMonth()+1).toString().padStart(2,'0');
+      var day = d.getDate().toString().padStart(2,'0');
+      var h = d.getHours().toString().padStart(2,'0');
+      var min = d.getMinutes().toString().padStart(2,'0');
+      return m + '-' + day + ' ' + h + ':' + min;
+    }
 
-            var container = document.getElementById('postList');
-            if (posts.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><h3>暂无帖子</h3><p>成为第一个发帖的人吧</p></div>';
-                return;
-            }
-
-            var html = '';
-            posts.forEach(function(p) {
-                var replyCount = p.replies ? p.replies.length : 0;
-                var avatarColor = getAvatarColor(p.author || '知友');
-                var avatarInitial = getAvatarInitial(p.author || '知友');
-                var imagesHtml = '';
-                if (p.images && p.images.length > 0) {
-                    imagesHtml = '<div class="post-images-preview">';
-                    p.images.slice(0, 3).forEach(function(img) {
-                        imagesHtml += '<img src="' + img + '" alt="图片">';
-                    });
-                    if (p.images.length > 3) imagesHtml += '<span style="align-self:center;color:#94a3b8;font-size:12px;">+' + (p.images.length - 3) + '</span>';
-                    imagesHtml += '</div>';
-                }
-                html +=
-                    '<div class="post-card" onclick="showDetail(\'' + p.id + '\')">' +
-                    '<div class="post-card-header">' +
-                    '<div class="avatar" style="background:' + avatarColor + '">' + avatarInitial + '</div>' +
-                    '<span class="post-author">' + esc(p.author || '知友') + '</span>' +
-                    '<span class="post-time">' + formatTime(p.created_at) + '</span>' +
-                    '<span class="tag" style="margin-left:auto;">' + esc(p.category || '讨论') + '</span>' +
-                    '</div>' +
-                    '<div class="post-title">' + esc(p.title) + '</div>' +
-                    '<div class="post-excerpt">' + getExcerpt(p.content, 100) + '</div>' +
-                    imagesHtml +
-                    '<div class="post-card-footer">' +
-                    '<span class="post-stat">👍 ' + (p.likes || 0) + '</span>' +
-                    '<span class="post-stat">💬 ' + replyCount + '</span>' +
-                    '<span class="post-stat">👁 ' + (p.views || 0) + '</span>' +
-                    '</div>' +
-                    '</div>';
-            });
-            container.innerHTML = html;
-        }
-
-        // ============ 帖子详情 ============
-        function renderDetail(id) {
-            var data = getData();
-            var p = data.posts.find(function(item) { return item.id === id; });
-            if (!p) {
-                document.getElementById('detailPanel').innerHTML = '<div class="empty-state"><p>帖子不存在</p></div>';
-                return;
-            }
-            // 增加浏览量
-            p.views = (p.views || 0) + 1;
-            saveData(data);
-
-            var avatarColor = getAvatarColor(p.author || '知友');
-            var avatarInitial = getAvatarInitial(p.author || '知友');
-            var imagesHtml = '';
-            if (p.images && p.images.length > 0) {
-                imagesHtml = '<div class="detail-images">';
-                p.images.forEach(function(img) {
-                    imagesHtml += '<img src="' + img + '" alt="图片" onclick="window.open(this.src)">';
-                });
-                imagesHtml += '</div>';
-            }
-
-            var repliesHtml = '';
-            if (p.replies && p.replies.length > 0) {
-                p.replies.forEach(function(r) {
-                    var rColor = getAvatarColor(r.author || '知友');
-                    var rInitial = getAvatarInitial(r.author || '知友');
-                    repliesHtml +=
-                        '<div class="reply-item">' +
-                        '<div class="avatar" style="background:' + rColor + ';width:32px;height:32px;font-size:13px;flex-shrink:0;">' + rInitial + '</div>' +
-                        '<div class="reply-body">' +
-                        '<div style="display:flex;gap:8px;align-items:center;"><span class="reply-author">' + esc(r.author || '知友') + '</span><span class="reply-time">' + formatTime(r.created_at) + '</span></div>' +
-                        '<div class="reply-text">' + esc(r.content) + '</div>' +
-                        '</div>' +
-                        '</div>';
-                });
-            } else {
-                repliesHtml = '<p style="color:#94a3b8;font-size:14px;padding:10px 0;">暂无回复，来抢沙发~</p>';
-            }
-
-            var html =
-                '<div class="detail-container">' +
-                '<div class="detail-back" onclick="showAllPosts()">← 返回列表</div>' +
-                '<div class="detail-title">' + esc(p.title) + '</div>' +
-                '<div class="detail-meta">' +
-                '<div class="avatar" style="background:' + avatarColor + '">' + avatarInitial + '</div>' +
-                '<span class="post-author">' + esc(p.author || '知友') + '</span>' +
-                '<span class="post-time">' + formatTime(p.created_at) + '</span>' +
-                '<span class="tag">' + esc(p.category || '讨论') + '</span>' +
-                '<span class="post-time">👁 ' + (p.views || 0) + ' 次浏览</span>' +
-                '</div>' +
-                '<div class="detail-content">' + esc(p.content) + '</div>' +
-                imagesHtml +
-                '<div class="detail-actions">' +
-                '<button class="action-btn' + (p.liked ? ' liked' : '') + '" id="likeBtn" onclick="likePost(\'' + p.id + '\')">👍 点赞 ' + (p.likes || 0) + '</button>' +
-                '<button class="action-btn" onclick="focusReply()">💬 回复</button>' +
-                '<button class="action-btn" onclick="sharePost()">🔗 分享</button>' +
-                '</div>' +
-                '<div class="reply-section">' +
-                '<h3>全部回复（' + (p.replies ? p.replies.length : 0) + '）</h3>' +
-                repliesHtml +
-                '<div class="reply-form">' +
-                '<input type="text" id="replyInput" placeholder="写下你的回复..." maxlength="500" onkeydown="if(event.key===\'Enter\')submitReply(\'' + p.id + '\')">' +
-                '<button class="btn btn-primary" onclick="submitReply(\'' + p.id + '\')">回复</button>' +
-                '</div>' +
-                '</div>' +
-                '</div>';
-
-            document.getElementById('detailPanel').innerHTML = html;
-            // 滚动到顶部
-            window.scrollTo(0, 0);
-        }
-
-        function focusReply() {
-            var input = document.getElementById('replyInput');
-            if (input) input.focus();
-        }
-
-        function sharePost() {
-            if (navigator.share) {
-                navigator.share({ title: '分享帖子', url: window.location.href }).catch(function() {});
-            } else {
-                alert('复制链接分享：' + window.location.href);
-            }
-        }
-
-        // ============ 互动功能 ============
-        function likePost(id) {
-            var data = getData();
-            var p = data.posts.find(function(item) { return item.id === id; });
-            if (!p) return;
-            p.liked = !p.liked;
-            if (p.liked) p.likes = (p.likes || 0) + 1;
-            else p.likes = Math.max(0, (p.likes || 0) - 1);
-            saveData(data);
-            renderDetail(id);
-        }
-
-        function submitReply(id) {
-            var input = document.getElementById('replyInput');
-            var content = input.value.trim();
-            if (!content) { alert('请输入回复内容'); return; }
-            var data = getData();
-            var p = data.posts.find(function(item) { return item.id === id; });
-            if (!p) return;
-            if (!p.replies) p.replies = [];
-            p.replies.push({
-                content: content,
-                author: '知友',
-                created_at: Date.now()
-            });
-            saveData(data);
-            renderDetail(id);
-        }
-
-        function searchPosts() {
-            var keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-            if (!keyword) { renderPostList(); return; }
-            var data = getData();
-            var posts = (data.posts || []).filter(function(p) {
-                return (p.title && p.title.toLowerCase().indexOf(keyword) !== -1) ||
-                    (p.content && p.content.toLowerCase().indexOf(keyword) !== -1) ||
-                    (p.author && p.author.toLowerCase().indexOf(keyword) !== -1) ||
-                    (p.category && p.category.toLowerCase().indexOf(keyword) !== -1);
-            });
-            posts.sort(function(a, b) { return (b.created_at || 0) - (a.created_at || 0); });
-            var container = document.getElementById('postList');
-            document.getElementById('listPanel').classList.remove('hidden');
-            document.getElementById('detailPanel').classList.add('hidden');
-            if (posts.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><h3>未找到相关帖子</h3><p>换个关键词试试</p></div>';
-                return;
-            }
-            var html = '';
-            posts.forEach(function(p) {
-                var replyCount = p.replies ? p.replies.length : 0;
-                var avatarColor = getAvatarColor(p.author || '知友');
-                var avatarInitial = getAvatarInitial(p.author || '知友');
-                html +=
-                    '<div class="post-card" onclick="showDetail(\'' + p.id + '\')">' +
-                    '<div class="post-card-header">' +
-                    '<div class="avatar" style="background:' + avatarColor + '">' + avatarInitial + '</div>' +
-                    '<span class="post-author">' + esc(p.author || '知友') + '</span>' +
-                    '<span class="post-time">' + formatTime(p.created_at) + '</span>' +
-                    '<span class="tag" style="margin-left:auto;">' + esc(p.category || '讨论') + '</span>' +
-                    '</div>' +
-                    '<div class="post-title">' + esc(p.title) + '</div>' +
-                    '<div class="post-excerpt">' + getExcerpt(p.content, 100) + '</div>' +
-                    '<div class="post-card-footer">' +
-                    '<span class="post-stat">👍 ' + (p.likes || 0) + '</span>' +
-                    '<span class="post-stat">💬 ' + replyCount + '</span>' +
-                    '<span class="post-stat">👁 ' + (p.views || 0) + '</span>' +
-                    '</div>' +
-                    '</div>';
-            });
-            container.innerHTML = html;
-        }
-
-        // ============ 发帖 ============
-        function handleImageUpload(event) {
-            var files = event.target.files;
-            for (var i = 0; i < files.length; i++) {
-                (function(file) {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        uploadedImages.push(e.target.result);
-                        renderImagePreview();
-                    };
-                    reader.readAsDataURL(file);
-                })(files[i]);
-            }
-            event.target.value = '';
-        }
-
-        function renderImagePreview() {
-            var container = document.getElementById('imagePreview');
-            var html = '';
-            uploadedImages.forEach(function(img, index) {
-                html += '<div style="position:relative;display:inline-block;">' +
-                    '<img src="' + img + '" alt="图片">' +
-                    '<span onclick="removeImage(' + index + ')" style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">×</span>' +
-                    '</div>';
-            });
-            container.innerHTML = html;
-        }
-
-        function removeImage(index) {
-            uploadedImages.splice(index, 1);
-            renderImagePreview();
-        }
-
-        function submitPost() {
-            var title = document.getElementById('postTitle').value.trim();
-            var content = document.getElementById('postContent').value.trim();
-            var category = document.getElementById('postCategory').value;
-            var author = document.getElementById('postAuthor').value.trim() || '知友';
-            if (!title) { alert('请输入标题'); return; }
-            if (!content) { alert('请输入内容'); return; }
-            var data = getData();
-            var post = {
-                id: generateId(),
-                title: title,
-                content: content,
-                category: category,
-                author: author,
-                images: uploadedImages.slice(),
-                likes: 0,
-                liked: false,
-                views: 0,
-                replies: [],
-                created_at: Date.now()
-            };
-            data.posts.unshift(post);
-            saveData(data);
-            closeNewPost();
-            goHome();
-        }
-
-        // ============ 初始化 ============
-        goHome();
-    </script>
+    goHome();
+  </script>
 </body>
 </html>
