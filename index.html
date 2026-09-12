@@ -102,25 +102,53 @@ document.getElementById('backBtn').classList.remove('hidden');
 loadDetail(id);
 }
 
-async function readData(){
-try{
-var res=await fetch(API+'?t='+Date.now());
-if(res.status===404){
+async function ensureBasket(){
+var res=await fetch(API);
+var data=await res.json();
+if(data.error && data.error.indexOf('Could not get basket')!==-1){
 var initData={posts:[]};
-await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(initData)});
+var createRes=await fetch(API,{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify(initData)
+});
+if(!createRes.ok){
+var txt=await createRes.text();
+throw new Error('创建篮子失败 HTTP '+createRes.status+' '+txt);
+}
 return initData;
 }
-if(!res.ok)throw new Error('HTTP '+res.status);
-return await res.json();
-}catch(e){console.error('读取失败:',e);return{posts:[]};}
+return data;
 }
+
+async function readData(){
+try{
+return await ensureBasket();
+}catch(e){
+console.error('读取失败:',e);
+return{posts:[]};
+}
+}
+
 async function writeData(data){
 try{
-var res=await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-if(!res.ok)throw new Error('HTTP '+res.status);
-return true;
-}catch(e){console.error('写入失败:',e);return false;}
+var res=await fetch(API,{
+method:'PUT',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify(data)
+});
+if(!res.ok){
+var txt=await res.text();
+throw new Error('HTTP '+res.status+' '+txt);
 }
+return true;
+}catch(e){
+console.error('写入失败:',e);
+alert('写入失败：'+e.message);
+return false;
+}
+}
+
 async function loadAllPosts(){
 document.getElementById('resultContent').innerHTML='<p class="tip">加载中...</p>';
 try{
@@ -182,7 +210,7 @@ var data=await readData();
 var posts=data.posts||[];
 posts.unshift({id:Date.now(),title:title,content:content,author:author,likes:0,replies:[],created_at:Date.now()});
 var ok=await writeData({posts:posts});
-if(!ok){alert('发布失败，请重试');return;}
+if(!ok)return;
 document.getElementById('postTitle').value='';
 document.getElementById('postContent').value='';
 alert('发布成功！');
@@ -201,7 +229,7 @@ if(!post){alert('帖子不存在');return;}
 if(!post.replies)post.replies=[];
 post.replies.push({content:content,author:author,created_at:Date.now()});
 var ok=await writeData({posts:posts});
-if(!ok){alert('回复失败，请重试');return;}
+if(!ok)return;
 loadDetail(postId);
 }catch(e){alert('回复失败：'+e.message);}
 }
