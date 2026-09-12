@@ -2,512 +2,224 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>星际守卫</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论坛</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #04070f; overflow: hidden;
-    display: flex; align-items: center; justify-content: center; }
-  canvas { display: block; background: #060a18; touch-action: none;
-    box-shadow: 0 0 30px rgba(74,163,255,0.3); border-radius: 6px; }
+body{background:#fff;font-family:SimSun,"宋体",serif;font-size:14px;color:#000;margin:0;padding:30px 20px;max-width:700px;margin-left:auto;margin-right:auto}
+h1{font-size:24px;text-align:center;margin-bottom:10px;font-weight:bold}
+.back-btn{position:absolute;top:15px;left:15px;font-size:28px;font-weight:bold;color:#0000cc;text-decoration:none;cursor:pointer;line-height:1;padding:5px 10px;border:none;background:none}
+.back-btn:hover{color:#f00}
+.nav{text-align:center;margin-bottom:15px}
+.nav a{color:#0000cc;margin:0 8px;font-size:14px;text-decoration:underline;cursor:pointer}
+.nav a:hover{color:#f00}
+.search-row{text-align:center;margin-bottom:15px}
+.search-row input{width:200px;border:1px solid #999;padding:3px 5px;font-size:14px;font-family:inherit;background:#fff}
+.search-row button{border:1px solid #999;background:#eee;padding:3px 16px;font-size:14px;font-family:inherit;cursor:pointer}
+.search-row button:hover{background:#ddd}
+table{width:100%;border-collapse:collapse;border:1px solid #999;background:#fff;margin-top:10px}
+th{background:#eee;border:1px solid #999;padding:4px 6px;text-align:left;font-weight:bold}
+td{border:1px solid #999;padding:4px 6px}
+.link{color:#0000cc;text-decoration:underline;cursor:pointer}
+.link:hover{color:#f00}
+.form-label{margin-top:8px;margin-bottom:2px}
+input[type="text"],textarea{width:100%;border:1px solid #999;padding:3px 5px;font-size:14px;font-family:inherit;background:#fff;box-sizing:border-box}
+textarea{min-height:100px;resize:vertical}
+button{border:1px solid #999;background:#eee;padding:3px 16px;font-size:14px;font-family:inherit;cursor:pointer;margin-top:8px}
+button:hover{background:#ddd}
+.hidden{display:none}
+.tip{text-align:center;color:#555;padding:15px}
+.reply-item{border-bottom:1px dashed #999;padding:6px 0}
+.reply-meta{font-size:12px;color:#555}
+.error-msg{background:#fee;border:1px solid #f99;padding:10px;margin:10px 0;font-size:13px;color:#c00}
 </style>
 </head>
 <body>
-<canvas id="game" width="480" height="720"></canvas>
+<button class="back-btn hidden" id="backBtn" onclick="goHome()">&#10094;</button>
+<h1>论坛</h1>
+<div class="nav" id="navBar">
+<a href="#" onclick="showNewPost();return false;">发帖</a>
+<a href="#" onclick="showAllPosts();return false;">浏览</a>
+</div>
+<div class="search-row" id="searchRow">
+<input type="text" id="searchInput" placeholder="搜索...">
+<button onclick="searchPosts()">搜索</button>
+</div>
+<div id="resultPanel" class="hidden"><div id="resultContent"></div></div>
+<div id="newPostPanel" class="hidden">
+<div class="form-label">标题：</div>
+<input type="text" id="postTitle" maxlength="100">
+<div class="form-label">内容：</div>
+<textarea id="postContent" maxlength="5000"></textarea>
+<div class="form-label">昵称：</div>
+<input type="text" id="postAuthor" maxlength="20" value="游客">
+<div><button onclick="submitPost()">发布</button><button onclick="goHome()">返回</button></div>
+</div>
+<div id="detailPanel" class="hidden"><div id="detailContent"></div></div>
 <script>
-(function () {
-  var W = 480, H = 720;
-  var canvas = document.getElementById('game');
-  var ctx = canvas.getContext('2d');
+var PANTRY_ID='ceb0ddb2-9689-4985-9b41-375b00c123b9';
+var BASKET='posts';
+var API='https://getpantry.cloud/apiv1/pantry/'+PANTRY_ID+'/basket/'+BASKET;
 
-  function fit() {
-    var dpr = window.devicePixelRatio || 1;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var s = Math.min(window.innerWidth / W, window.innerHeight / H);
-    canvas.style.width = (W * s) + 'px';
-    canvas.style.height = (H * s) + 'px';
-  }
-  window.addEventListener('resize', fit);
-  fit();
-
-  var state = 'ready';
-  var score = 0;
-  var best = 0;
-  try { best = parseInt(localStorage.getItem('space_best') || '0', 10) || 0; } catch (e) {}
-
-  var bullets = [], enemies = [], particles = [], drops = [], stars = [];
-  var keys = {};
-  var pointerX = null, pointerY = null, pointerActive = false;
-  var spawnTimer = 0, shake = 0;
-
-  var player = { x: W / 2, y: H - 90, r: 15, speed: 340, lives: 3, cd: 0, power: 1, inv: 0 };
-
-  for (var i = 0; i < 70; i++) stars.push({ x: Math.random()*W, y: Math.random()*H, z: Math.random()*2+0.5 });
-
-  function reset() {
-    state = 'playing';
-    score = 0; spawnTimer = 0; shake = 0;
-    bullets = []; enemies = []; particles = []; drops = [];
-    player.x = W / 2; player.y = H - 90;
-    player.lives = 3; player.cd = 0; player.power = 1; player.inv = 1.5;
-  }
-
-  document.addEventListener('keydown', function (e) {
-    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].indexOf(e.key) !== -1) e.preventDefault();
-    keys[e.key.toLowerCase()] = true;
-    if (e.key === ' ' && (state === 'ready' || state === 'over')) reset();
-  });
-  document.addEventListener('keyup', function (e) { keys[e.key.toLowerCase()] = false; });
-
-  function toLocalX(e) {
-    var r = canvas.getBoundingClientRect();
-    return (e.clientX - r.left) / (r.width / W);
-  }
-  function toLocalY(e) {
-    var r = canvas.getBoundingClientRect();
-    return (e.clientY - r.top) / (r.height / H);
-  }
-  canvas.addEventListener('pointerdown', function (e) {
-    pointerActive = true;
-    pointerX = toLocalX(e); pointerY = toLocalY(e);
-    if (state === 'ready' || state === 'over') reset();
-    if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch (err) {} }
-  });
-  canvas.addEventListener('pointermove', function (e) {
-    if (pointerActive) { pointerX = toLocalX(e); pointerY = toLocalY(e); }
-  });
-  document.addEventListener('pointerup', function () { pointerActive = false; pointerX = pointerY = null; });
-  document.addEventListener('pointercancel', function () { pointerActive = false; pointerX = pointerY = null; });
-
-  function clampPlayer() {
-    var pad = player.r + 2;
-    if (player.x < pad) player.x = pad;
-    if (player.x > W - pad) player.x = W - pad;
-    if (player.y < pad) player.y = pad;
-    if (player.y > H - pad) player.y = H - pad;
-  }
-
-  function updatePlayer(dt) {
-    var dx = 0, dy = 0;
-    if (keys['arrowleft'] || keys['a']) dx -= 1;
-    if (keys['arrowright'] || keys['d']) dx += 1;
-    if (keys['arrowup'] || keys['w']) dy -= 1;
-    if (keys['arrowdown'] || keys['s']) dy += 1;
-
-    if (dx !== 0 || dy !== 0) {
-      var len = Math.sqrt(dx*dx + dy*dy) || 1;
-      player.x += (dx / len) * player.speed * dt;
-      player.y += (dy / len) * player.speed * dt;
-    } else if (pointerActive && pointerX !== null && pointerY !== null) {
-      player.x += (pointerX - player.x) * Math.min(1, dt * 14);
-      player.y += (pointerY - player.y) * Math.min(1, dt * 14);
-    }
-
-    clampPlayer();
-
-    if (player.inv > 0) player.inv -= dt;
-    player.cd -= dt;
-    if (player.cd <= 0) { fire(); player.cd = 0.16; }
-  }
-
-  function fire() {
-    var y = player.y - player.r;
-    if (player.power === 1) bullets.push({ x: player.x, y: y, vy: -580, r: 3 });
-    else if (player.power === 2) {
-      bullets.push({ x: player.x - 8, y: y, vy: -580, r: 3 });
-      bullets.push({ x: player.x + 8, y: y, vy: -580, r: 3 });
-    } else {
-      bullets.push({ x: player.x, y: y, vy: -640, r: 3.5 });
-      bullets.push({ x: player.x - 12, y: y + 6, vy: -580, r: 3 });
-      bullets.push({ x: player.x + 12, y: y + 6, vy: -580, r: 3 });
-    }
-  }
-
-  function spawnEnemy() {
-    var isShip = Math.random() < 0.3;
-    var x = 40 + Math.random() * (W - 80);
-    if (isShip) {
-      enemies.push({ type:'ship', x:x, y:-30, r:14, vy:90+score*0.05,
-        vx: (Math.random()<0.5?-1:1)*(40+score*0.03), hp:2, points:25, hit:0 });
-    } else {
-      var r = 12 + Math.random()*12;
-      var shape = [];
-      for (var i = 0; i < 8; i++) shape.push(0.75 + Math.random()*0.5);
-      enemies.push({ type:'rock', x:x, y:-30, r:r, vy:70+score*0.04+Math.random()*30,
-        vx:(Math.random()-0.5)*40, hp:r>20?2:1, points:Math.round(r), hit:0,
-        rot:Math.random()*6.28, rotSpeed:(Math.random()-0.5)*2, shape:shape });
-    }
-  }
-
-  function updateEnemies(dt) {
-    for (var i = enemies.length - 1; i >= 0; i--) {
-      var e = enemies[i];
-      e.y += e.vy * dt;
-      e.x += e.vx * dt;
-      if (e.type === 'ship') {
-        if (e.x < 30 || e.x > W - 30) e.vx *= -1;
-        e.x = Math.max(20, Math.min(W - 20, e.x));
-      } else {
-        e.rot += e.rotSpeed * dt;
-      }
-      if (e.hit > 0) e.hit -= dt;
-      if (e.y > H + 60) { enemies.splice(i, 1); continue; }
-
-      if (player.inv <= 0) {
-        var ddx = e.x - player.x, ddy = e.y - player.y;
-        var rr = e.r + player.r * 0.7;
-        if (ddx*ddx + ddy*ddy < rr*rr) {
-          hitPlayer();
-          explode(e.x, e.y, e.type==='rock'?'#c9a227':'#e0503a', 16);
-          enemies.splice(i, 1);
-        }
-      }
-    }
-  }
-
-  function killEnemy(e, idx) {
-    score += e.points;
-    explode(e.x, e.y, e.type==='rock'?'#c9a227':'#e0503a', e.type==='rock'?14:20);
-    if (Math.random() < 0.14) {
-      drops.push({ x:e.x, y:e.y, r:10, vy:90, t:0,
-        type: Math.random()<0.5?'heart':'power' });
-    }
-    enemies.splice(idx, 1);
-    shake = Math.min(8, shake + 3);
-  }
-
-  function updateBullets(dt) {
-    for (var i = bullets.length - 1; i >= 0; i--) {
-      var b = bullets[i];
-      b.y += b.vy * dt;
-      if (b.y < -20) { bullets.splice(i, 1); continue; }
-      var hit = false;
-      for (var j = enemies.length - 1; j >= 0; j--) {
-        var e = enemies[j];
-        var dx = b.x - e.x, dy = b.y - e.y;
-        var rr = e.r + b.r;
-        if (dx*dx + dy*dy < rr*rr) {
-          e.hp -= 1; e.hit = 0.1; hit = true;
-          explode(b.x, b.y, '#ffd166', 4);
-          if (e.hp <= 0) killEnemy(e, j);
-          break;
-        }
-      }
-      if (hit) bullets.splice(i, 1);
-    }
-  }
-
-  function explode(x, y, color, n) {
-    for (var i = 0; i < n; i++) {
-      var a = Math.random() * 6.283;
-      var sp = 40 + Math.random() * 220;
-      var life = 0.4 + Math.random() * 0.5;
-      particles.push({ x:x, y:y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
-        life:life, maxLife:life, color:color, size:1.5 + Math.random()*2.5 });
-    }
-  }
-
-  function updateParticles(dt) {
-    for (var i = particles.length - 1; i >= 0; i--) {
-      var p = particles[i];
-      p.x += p.vx * dt; p.y += p.vy * dt;
-      p.vx *= 0.96; p.vy *= 0.96;
-      p.life -= dt;
-      if (p.life <= 0) particles.splice(i, 1);
-    }
-  }
-
-  function updateDrops(dt) {
-    for (var i = drops.length - 1; i >= 0; i--) {
-      var d = drops[i];
-      d.y += d.vy * dt; d.t += dt;
-      if (d.y > H + 30) { drops.splice(i, 1); continue; }
-      var dx = d.x - player.x, dy = d.y - player.y;
-      var rr = d.r + player.r + 6;
-      if (dx*dx + dy*dy < rr*rr) {
-        if (d.type === 'heart') player.lives = Math.min(5, player.lives + 1);
-        else player.power = Math.min(3, player.power + 1);
-        explode(d.x, d.y, '#7ee787', 10);
-        drops.splice(i, 1);
-      }
-    }
-  }
-
-  function hitPlayer() {
-    player.lives -= 1;
-    player.inv = 2;
-    player.power = Math.max(1, player.power - 1);
-    shake = 14;
-    explode(player.x, player.y, '#4aa3ff', 24);
-    if (player.lives <= 0) {
-      state = 'over';
-      if (score > best) { best = score; try { localStorage.setItem('space_best', String(best)); } catch (e) {} }
-    }
-  }
-
-  var lastT = performance.now();
-  function loop(now) {
-    var dt = (now - lastT) / 1000;
-    lastT = now;
-    if (dt > 0.05) dt = 0.05;
-    update(dt);
-    draw();
-    requestAnimationFrame(loop);
-  }
-
-  function update(dt) {
-    for (var i = 0; i < stars.length; i++) {
-      stars[i].y += (20 + stars[i].z * 40) * dt;
-      if (stars[i].y > H) { stars[i].y = -2; stars[i].x = Math.random() * W; }
-    }
-    if (shake > 0) shake = Math.max(0, shake - dt * 40);
-
-    if (state !== 'playing') { updateParticles(dt); return; }
-
-    updatePlayer(dt);
-    updateBullets(dt);
-    updateEnemies(dt);
-    updateParticles(dt);
-    updateDrops(dt);
-
-    spawnTimer -= dt;
-    if (spawnTimer <= 0) {
-      spawnEnemy();
-      spawnTimer = Math.max(0.35, 1.0 - score * 0.001) * (0.7 + Math.random() * 0.6);
-    }
-  }
-
-  function draw() {
-    ctx.save();
-    ctx.fillStyle = '#060a18';
-    ctx.fillRect(0, 0, W, H);
-
-    if (shake > 0) ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
-
-    for (var i = 0; i < stars.length; i++) {
-      var s = stars[i];
-      ctx.globalAlpha = 0.3 + s.z * 0.3;
-      ctx.fillStyle = '#9fb6ff';
-      ctx.fillRect(s.x, s.y, s.z, s.z * 2);
-    }
-    ctx.globalAlpha = 1;
-
-    for (var i = 0; i < particles.length; i++) {
-      var p = particles[i];
-      ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
-      ctx.fillStyle = p.color;
-      ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
-    }
-    ctx.globalAlpha = 1;
-
-    for (var i = 0; i < drops.length; i++) drawDrop(drops[i]);
-    for (var i = 0; i < enemies.length; i++) drawEnemy(enemies[i]);
-
-    ctx.fillStyle = '#ffe27a';
-    for (var i = 0; i < bullets.length; i++) {
-      ctx.beginPath();
-      ctx.arc(bullets[i].x, bullets[i].y, bullets[i].r, 0, 6.283);
-      ctx.fill();
-    }
-
-    if (state === 'playing' || state === 'ready') {
-      if (player.inv <= 0 || Math.floor(player.inv * 10) % 2 === 0) drawPlayer();
-    }
-
-    ctx.restore();
-
-    drawHUD();
-    if (state === 'ready') drawReady();
-    if (state === 'over') drawOver();
-  }
-
-  function drawPlayer() {
-    ctx.save();
-    ctx.translate(player.x, player.y);
-
-    var flame = 8 + Math.random() * 8;
-    var g = ctx.createLinearGradient(0, 12, 0, 12 + flame);
-    g.addColorStop(0, 'rgba(120,200,255,0.9)');
-    g.addColorStop(1, 'rgba(120,200,255,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(-6, 12);
-    ctx.lineTo(0, 12 + flame);
-    ctx.lineTo(6, 12);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#4aa3ff';
-    ctx.beginPath();
-    ctx.moveTo(0, -18);
-    ctx.lineTo(12, 12);
-    ctx.lineTo(0, 6);
-    ctx.lineTo(-12, 12);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#bfe3ff';
-    ctx.beginPath();
-    ctx.arc(0, -4, 3.5, 0, 6.283);
-    ctx.fill();
-
-    ctx.restore();
-  }
-
-  function drawEnemy(e) {
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    if (e.type === 'rock') {
-      ctx.rotate(e.rot);
-      ctx.fillStyle = e.hit > 0 ? '#fff' : '#8a7a52';
-      ctx.strokeStyle = e.hit > 0 ? '#fff' : '#c9a227';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      var n = e.shape.length;
-      for (var i = 0; i < n; i++) {
-        var a = (i / n) * 6.283;
-        var rr = e.r * e.shape[i];
-        var px = Math.cos(a) * rr, py = Math.sin(a) * rr;
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = e.hit > 0 ? '#fff' : '#e0503a';
-      ctx.beginPath();
-      ctx.moveTo(0, 16);
-      ctx.lineTo(14, -8);
-      ctx.lineTo(0, -2);
-      ctx.lineTo(-14, -8);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#ffb3a7';
-      ctx.beginPath();
-      ctx.arc(0, 2, 3, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  function drawDrop(d) {
-    ctx.save();
-    ctx.translate(d.x, d.y);
-    var pulse = 1 + Math.sin(d.t * 8) * 0.15;
-    ctx.scale(pulse, pulse);
-    if (d.type === 'heart') {
-      ctx.fillStyle = '#ff6b81';
-      ctx.beginPath();
-      ctx.arc(-3.5, -2, 4, 0, 6.283);
-      ctx.arc(3.5, -2, 4, 0, 6.283);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-7.5, -1);
-      ctx.lineTo(0, 8);
-      ctx.lineTo(7.5, -1);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      ctx.fillStyle = '#7ee787';
-      ctx.beginPath();
-      ctx.moveTo(0, -9);
-      ctx.lineTo(6, 0);
-      ctx.lineTo(0, 9);
-      ctx.lineTo(-6, 0);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#0b3d1e';
-      ctx.font = 'bold 9px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('P', 0, 0);
-    }
-    ctx.restore();
-  }
-
-  function drawHeart(x, y) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = '#ff6b81';
-    ctx.beginPath();
-    ctx.arc(-3, -2, 3.2, 0, 6.283);
-    ctx.arc(3, -2, 3.2, 0, 6.283);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-6.2, -1);
-    ctx.lineTo(0, 6.5);
-    ctx.lineTo(6.2, -1);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function drawHUD() {
-    ctx.save();
-    ctx.fillStyle = '#e6ecff';
-    ctx.font = 'bold 16px "Courier New", monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('分数 ' + score, 14, 12);
-    ctx.textAlign = 'right';
-    ctx.fillText('最高 ' + best, W - 14, 12);
-    for (var i = 0; i < player.lives; i++) drawHeart(16 + i * 20, 40);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#7ee787';
-    ctx.font = 'bold 13px "Courier New", monospace';
-    ctx.fillText('火力 ' + player.power, W - 14, 42);
-    ctx.restore();
-  }
-
-  function drawReady() {
-    ctx.save();
-    ctx.fillStyle = 'rgba(6,10,24,0.75)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#e6ecff';
-    ctx.font = 'bold 44px "Courier New", monospace';
-    ctx.fillText('星际守卫', W / 2, H / 2 - 80);
-    ctx.fillStyle = '#9fb6ff';
-    ctx.font = '16px "Courier New", monospace';
-    ctx.fillText('方向键 / WASD 移动', W / 2, H / 2 - 20);
-    ctx.fillText('鼠标或手指拖动', W / 2, H / 2 + 8);
-    ctx.fillText('飞船自动开火', W / 2, H / 2 + 36);
-    if (Math.sin(performance.now() / 300) > -0.2) {
-      ctx.fillStyle = '#ffd166';
-      ctx.font = 'bold 20px "Courier New", monospace';
-      ctx.fillText('按 空格 或 点击 开始', W / 2, H / 2 + 100);
-    }
-    ctx.fillStyle = '#5a6a99';
-    ctx.font = '13px "Courier New", monospace';
-    ctx.fillText('最高分 ' + best, W / 2, H / 2 + 150);
-    ctx.restore();
-  }
-
-  function drawOver() {
-    ctx.save();
-    ctx.fillStyle = 'rgba(6,10,24,0.8)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ff6b81';
-    ctx.font = 'bold 42px "Courier New", monospace';
-    ctx.fillText('游戏结束', W / 2, H / 2 - 60);
-    ctx.fillStyle = '#e6ecff';
-    ctx.font = 'bold 26px "Courier New", monospace';
-    ctx.fillText('得分 ' + score, W / 2, H / 2 + 5);
-    ctx.fillStyle = '#9fb6ff';
-    ctx.font = '16px "Courier New", monospace';
-    ctx.fillText('最高分 ' + best, W / 2, H / 2 + 45);
-    if (Math.sin(performance.now() / 300) > -0.2) {
-      ctx.fillStyle = '#ffd166';
-      ctx.font = 'bold 18px "Courier New", monospace';
-      ctx.fillText('按 空格 或 点击 重来', W / 2, H / 2 + 110);
-    }
-    ctx.restore();
-  }
-
-  requestAnimationFrame(loop);
-})();
+function goHome(){
+document.getElementById('navBar').classList.remove('hidden');
+document.getElementById('searchRow').classList.remove('hidden');
+document.getElementById('resultPanel').classList.add('hidden');
+document.getElementById('newPostPanel').classList.add('hidden');
+document.getElementById('detailPanel').classList.add('hidden');
+document.getElementById('backBtn').classList.add('hidden');
+}
+function showNewPost(){
+document.getElementById('navBar').classList.add('hidden');
+document.getElementById('searchRow').classList.add('hidden');
+document.getElementById('resultPanel').classList.add('hidden');
+document.getElementById('newPostPanel').classList.remove('hidden');
+document.getElementById('detailPanel').classList.add('hidden');
+document.getElementById('backBtn').classList.remove('hidden');
+}
+function showAllPosts(){
+document.getElementById('navBar').classList.add('hidden');
+document.getElementById('searchRow').classList.add('hidden');
+document.getElementById('resultPanel').classList.remove('hidden');
+document.getElementById('newPostPanel').classList.add('hidden');
+document.getElementById('detailPanel').classList.add('hidden');
+document.getElementById('backBtn').classList.remove('hidden');
+loadAllPosts();
+}
+function showDetail(id){
+document.getElementById('navBar').classList.add('hidden');
+document.getElementById('searchRow').classList.add('hidden');
+document.getElementById('resultPanel').classList.add('hidden');
+document.getElementById('newPostPanel').classList.add('hidden');
+document.getElementById('detailPanel').classList.remove('hidden');
+document.getElementById('backBtn').classList.remove('hidden');
+loadDetail(id);
+}
+async function readData(){
+try{
+var res=await fetch(API);
+if(res.status===404){
+var initData={posts:[]};
+await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(initData)});
+return initData;
+}
+if(!res.ok)throw new Error('HTTP '+res.status);
+return await res.json();
+}catch(e){console.error('读取失败:',e);return{posts:[]};}
+}
+async function writeData(data){
+try{
+var res=await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+if(!res.ok)throw new Error('HTTP '+res.status);
+return true;
+}catch(e){console.error('写入失败:',e);return false;}
+}
+async function loadAllPosts(){
+try{
+var data=await readData();
+renderPostTable(data.posts||[]);
+}catch(e){
+document.getElementById('resultContent').innerHTML='<div class="error-msg">加载失败：'+e.message+'</div>';
+}
+}
+async function searchPosts(){
+var keyword=document.getElementById('searchInput').value.trim();
+if(!keyword){alert('请输入关键词');return;}
+try{
+var data=await readData();
+var posts=(data.posts||[]).filter(function(p){return p.title.indexOf(keyword)!==-1||p.content.indexOf(keyword)!==-1;});
+document.getElementById('navBar').classList.add('hidden');
+document.getElementById('searchRow').classList.add('hidden');
+document.getElementById('resultPanel').classList.remove('hidden');
+document.getElementById('newPostPanel').classList.add('hidden');
+document.getElementById('detailPanel').classList.add('hidden');
+document.getElementById('backBtn').classList.remove('hidden');
+renderPostTable(posts);
+}catch(e){alert('搜索失败：'+e.message);}
+}
+function renderPostTable(posts){
+var container=document.getElementById('resultContent');
+if(posts.length===0){container.innerHTML='<p class="tip">暂无帖子</p>';return;}
+var html='<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
+posts.forEach(function(p){
+var replyCount=p.replies?p.replies.length:0;
+html+='<tr><td><a href="#" class="link" onclick="showDetail('+p.id+');return false;">'+esc(p.title)+'</a></td><td>'+esc(p.author)+'</td><td>'+replyCount+'</td><td>'+(p.likes||0)+'</td><td>'+formatTime(p.created_at)+'</td></tr>';
+});
+html+='</tbody></table>';
+container.innerHTML=html;
+}
+async function loadDetail(id){
+try{
+var data=await readData();
+var p=(data.posts||[]).find(function(item){return item.id===id;});
+if(!p){document.getElementById('detailContent').innerHTML='<p class="tip">帖子不存在</p>';return;}
+var html='<h3>'+esc(p.title)+'</h3><p>作者：'+esc(p.author)+' | 时间：'+formatTime(p.created_at)+' | <a href="#" class="link" onclick="likePost('+p.id+');return false;">点赞（'+(p.likes||0)+'）</a></p><hr><p>'+esc(p.content)+'</p><hr><h4>回复：</h4>';
+if(p.replies&&p.replies.length>0){
+p.replies.forEach(function(r){
+html+='<div class="reply-item"><div class="reply-meta">'+esc(r.author)+' | '+formatTime(r.created_at)+'</div><div>'+esc(r.content)+'</div></div>';
+});
+}else{html+='<p class="tip">暂无回复</p>';}
+html+='<div class="form-label">回复：</div><input type="text" id="replyContent" maxlength="1000"><div class="form-label">昵称：</div><input type="text" id="replyAuthor" maxlength="20" value="游客"><div><button onclick="submitReply('+p.id+')">提交回复</button></div>';
+document.getElementById('detailContent').innerHTML=html;
+}catch(e){document.getElementById('detailContent').innerHTML='<p class="tip">加载失败：'+e.message+'</p>';}
+}
+async function submitPost(){
+var title=document.getElementById('postTitle').value.trim();
+var content=document.getElementById('postContent').value.trim();
+var author=document.getElementById('postAuthor').value.trim()||'游客';
+if(!title||!content){alert('标题和内容不能为空');return;}
+try{
+var data=await readData();
+var posts=data.posts||[];
+posts.unshift({id:Date.now(),title:title,content:content,author:author,likes:0,replies:[],created_at:Date.now()});
+var ok=await writeData({posts:posts});
+if(!ok){alert('发布失败，请重试');return;}
+document.getElementById('postTitle').value='';
+document.getElementById('postContent').value='';
+alert('发布成功！');
+goHome();
+}catch(e){alert('发布失败：'+e.message);}
+}
+async function submitReply(postId){
+var content=document.getElementById('replyContent').value.trim();
+var author=document.getElementById('replyAuthor').value.trim()||'游客';
+if(!content){alert('回复不能为空');return;}
+try{
+var data=await readData();
+var posts=data.posts||[];
+var post=posts.find(function(p){return p.id===postId;});
+if(!post){alert('帖子不存在');return;}
+if(!post.replies)post.replies=[];
+post.replies.push({content:content,author:author,created_at:Date.now()});
+var ok=await writeData({posts:posts});
+if(!ok){alert('回复失败，请重试');return;}
+loadDetail(postId);
+}catch(e){alert('回复失败：'+e.message);}
+}
+async function likePost(postId){
+try{
+var data=await readData();
+var posts=data.posts||[];
+var post=posts.find(function(p){return p.id===postId;});
+if(!post)return;
+post.likes=(post.likes||0)+1;
+await writeData({posts:posts});
+loadDetail(postId);
+}catch(e){alert('点赞失败：'+e.message);}
+}
+function esc(str){
+if(!str)return'';
+return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatTime(ts){
+if(!ts)return'';
+var d=new Date(ts);
+var m=(d.getMonth()+1).toString().padStart(2,'0');
+var day=d.getDate().toString().padStart(2,'0');
+var h=d.getHours().toString().padStart(2,'0');
+var min=d.getMinutes().toString().padStart(2,'0');
+return m+'-'+day+' '+h+':'+min;
+}
+goHome();
 </script>
 </body>
 </html>
