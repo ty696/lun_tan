@@ -7,10 +7,10 @@
 <style>
 body{background:#fff;font-family:SimSun,"宋体",serif;font-size:14px;color:#000;margin:0;padding:30px 20px;max-width:700px;margin-left:auto;margin-right:auto}
 h1{font-size:24px;text-align:center;margin-bottom:10px;font-weight:bold}
-.back-btn{position:absolute;top:15px;left:15px;font-size:28px;font-weight:bold;color:#0000cc;text-decoration:none;cursor:pointer;line-height:1;padding:5px 10px;border:none;background:none}
+.back-btn{position:absolute;top:15px;left:15px;font-size:28px;font-weight:bold;color:#00c;text-decoration:none;cursor:pointer;line-height:1;padding:5px 10px;border:none;background:none}
 .back-btn:hover{color:#f00}
 .nav{text-align:center;margin-bottom:15px}
-.nav a{color:#0000cc;margin:0 8px;font-size:14px;text-decoration:underline;cursor:pointer}
+.nav a{color:#00c;margin:0 8px;font-size:14px;text-decoration:underline;cursor:pointer}
 .nav a:hover{color:#f00}
 .search-row{text-align:center;margin-bottom:15px}
 .search-row input{width:200px;border:1px solid #999;padding:3px 5px;font-size:14px;font-family:inherit;background:#fff}
@@ -19,7 +19,7 @@ h1{font-size:24px;text-align:center;margin-bottom:10px;font-weight:bold}
 table{width:100%;border-collapse:collapse;border:1px solid #999;background:#fff;margin-top:10px}
 th{background:#eee;border:1px solid #999;padding:4px 6px;text-align:left;font-weight:bold}
 td{border:1px solid #999;padding:4px 6px}
-.link{color:#0000cc;text-decoration:underline;cursor:pointer}
+.link{color:#00c;text-decoration:underline;cursor:pointer}
 .link:hover{color:#f00}
 .form-label{margin-top:8px;margin-bottom:2px}
 input[type="text"],textarea{width:100%;border:1px solid #999;padding:3px 5px;font-size:14px;font-family:inherit;background:#fff;box-sizing:border-box}
@@ -34,17 +34,22 @@ button:hover{background:#ddd}
 </style>
 </head>
 <body>
+
 <button class="back-btn hidden" id="backBtn" onclick="goHome()">&#10094;</button>
 <h1>论坛</h1>
+
 <div class="nav" id="navBar">
 <a href="#" onclick="showNewPost();return false;">发帖</a>
 <a href="#" onclick="showAllPosts();return false;">浏览</a>
 </div>
+
 <div class="search-row" id="searchRow">
 <input type="text" id="searchInput" placeholder="搜索...">
 <button onclick="searchPosts()">搜索</button>
 </div>
+
 <div id="resultPanel" class="hidden"><div id="resultContent"></div></div>
+
 <div id="newPostPanel" class="hidden">
 <div class="form-label">标题：</div>
 <input type="text" id="postTitle" maxlength="100">
@@ -54,7 +59,9 @@ button:hover{background:#ddd}
 <input type="text" id="postAuthor" maxlength="20" value="游客">
 <div><button onclick="submitPost()">发布</button><button onclick="goHome()">返回</button></div>
 </div>
+
 <div id="detailPanel" class="hidden"><div id="detailContent"></div></div>
+
 <script>
 var PANTRY_ID='ceb0ddb2-9689-4985-9b41-375b00c123b9';
 var BASKET='posts';
@@ -94,9 +101,10 @@ document.getElementById('detailPanel').classList.remove('hidden');
 document.getElementById('backBtn').classList.remove('hidden');
 loadDetail(id);
 }
+
 async function readData(){
 try{
-var res=await fetch(API);
+var res=await fetch(API+'?t='+Date.now());
 if(res.status===404){
 var initData={posts:[]};
 await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(initData)});
@@ -114,6 +122,7 @@ return true;
 }catch(e){console.error('写入失败:',e);return false;}
 }
 async function loadAllPosts(){
+document.getElementById('resultContent').innerHTML='<p class="tip">加载中...</p>';
 try{
 var data=await readData();
 renderPostTable(data.posts||[]);
@@ -137,29 +146,30 @@ renderPostTable(posts);
 }catch(e){alert('搜索失败：'+e.message);}
 }
 function renderPostTable(posts){
-var container=document.getElementById('resultContent');
-if(posts.length===0){container.innerHTML='<p class="tip">暂无帖子</p>';return;}
-var html='<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
+var c=document.getElementById('resultContent');
+if(posts.length===0){c.innerHTML='<p class="tip">暂无帖子</p>';return;}
+var h='<table><thead><tr><th>标题</th><th>作者</th><th>回复</th><th>赞</th><th>时间</th></tr></thead><tbody>';
 posts.forEach(function(p){
-var replyCount=p.replies?p.replies.length:0;
-html+='<tr><td><a href="#" class="link" onclick="showDetail('+p.id+');return false;">'+esc(p.title)+'</a></td><td>'+esc(p.author)+'</td><td>'+replyCount+'</td><td>'+(p.likes||0)+'</td><td>'+formatTime(p.created_at)+'</td></tr>';
+var rc=p.replies?p.replies.length:0;
+h+='<tr><td><a href="#" class="link" onclick="showDetail('+p.id+');return false;">'+esc(p.title)+'</a></td><td>'+esc(p.author)+'</td><td>'+rc+'</td><td>'+(p.likes||0)+'</td><td>'+formatTime(p.created_at)+'</td></tr>';
 });
-html+='</tbody></table>';
-container.innerHTML=html;
+h+='</tbody></table>';
+c.innerHTML=h;
 }
 async function loadDetail(id){
+document.getElementById('detailContent').innerHTML='<p class="tip">加载中...</p>';
 try{
 var data=await readData();
-var p=(data.posts||[]).find(function(item){return item.id===id;});
+var p=(data.posts||[]).find(function(x){return x.id===id;});
 if(!p){document.getElementById('detailContent').innerHTML='<p class="tip">帖子不存在</p>';return;}
-var html='<h3>'+esc(p.title)+'</h3><p>作者：'+esc(p.author)+' | 时间：'+formatTime(p.created_at)+' | <a href="#" class="link" onclick="likePost('+p.id+');return false;">点赞（'+(p.likes||0)+'）</a></p><hr><p>'+esc(p.content)+'</p><hr><h4>回复：</h4>';
+var h='<h3>'+esc(p.title)+'</h3><p>作者：'+esc(p.author)+' | 时间：'+formatTime(p.created_at)+' | <a href="#" class="link" onclick="likePost('+p.id+');return false;">点赞（'+(p.likes||0)+'）</a></p><hr><p>'+esc(p.content)+'</p><hr><h4>回复：</h4>';
 if(p.replies&&p.replies.length>0){
 p.replies.forEach(function(r){
-html+='<div class="reply-item"><div class="reply-meta">'+esc(r.author)+' | '+formatTime(r.created_at)+'</div><div>'+esc(r.content)+'</div></div>';
+h+='<div class="reply-item"><div class="reply-meta">'+esc(r.author)+' | '+formatTime(r.created_at)+'</div><div>'+esc(r.content)+'</div></div>';
 });
-}else{html+='<p class="tip">暂无回复</p>';}
-html+='<div class="form-label">回复：</div><input type="text" id="replyContent" maxlength="1000"><div class="form-label">昵称：</div><input type="text" id="replyAuthor" maxlength="20" value="游客"><div><button onclick="submitReply('+p.id+')">提交回复</button></div>';
-document.getElementById('detailContent').innerHTML=html;
+}else{h+='<p class="tip">暂无回复</p>';}
+h+='<div class="form-label">回复：</div><input type="text" id="replyContent" maxlength="1000"><div class="form-label">昵称：</div><input type="text" id="replyAuthor" maxlength="20" value="游客"><div><button onclick="submitReply('+p.id+')">提交回复</button></div>';
+document.getElementById('detailContent').innerHTML=h;
 }catch(e){document.getElementById('detailContent').innerHTML='<p class="tip">加载失败：'+e.message+'</p>';}
 }
 async function submitPost(){
@@ -216,9 +226,10 @@ var d=new Date(ts);
 var m=(d.getMonth()+1).toString().padStart(2,'0');
 var day=d.getDate().toString().padStart(2,'0');
 var h=d.getHours().toString().padStart(2,'0');
-var min=d.getMinutes().toString().padStart(2,'0');
-return m+'-'+day+' '+h+':'+min;
+var mi=d.getMinutes().toString().padStart(2,'0');
+return m+'-'+day+' '+h+':'+mi;
 }
+
 goHome();
 </script>
 </body>
